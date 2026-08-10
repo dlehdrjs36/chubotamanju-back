@@ -1,0 +1,37 @@
+server:
+  port: 8081
+
+spring:
+  application:
+    name: daisso
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: "jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:}?sslMode=REQUIRED"
+    username: "${DB_ADMIN_ID:root}"
+    password: "${DB_ADMIN_PASSWORD:dglee}"
+  jpa:
+    hibernate:
+      ddl-auto: none
+    show-sql: true
+  messages:
+    basename:
+      - "messages/globalError"
+
+# swagger 설정
+#springdoc:
+#  api-docs:
+#    path: /api-docs/json
+#  swagger-ui:
+#    enabled: false
+#  default-consumes-media-type: application/json;charset=UTF-8
+#  default-produces-media-type: application/json;charset=UTF-8
+#  show-actuator: true
+#
+#openapi:
+#  service:
+#    url: http://localhost:8000/application
+
+jwt:
+  secret: "${JWT_SECRET:dsajkdksajdksajdsadajflkdsjkldjsklfjdslkjdklsjldksjlksdjlfkdsj}"
+  access-expiration: 86400000 # 액세스 토큰 만료일 24시간
+  refresh-expiration: 604800000 # 리프레시 토큰 만료일 7일
