@@ -1,4 +1,4 @@
-package com.side.daisso.global.common;
+package com.side.chubotamanju.global.common;
 
 import lombok.Getter;
 import lombok.Setter;

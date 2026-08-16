@@ -1,10 +1,10 @@
-package com.side.daisso.global.exception;
+package com.side.chubotamanju.global.exception;
 
 
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.exc.InvalidFormatException;
-import com.side.daisso.global.common.ApiResult;
-import com.side.daisso.global.exception.enums.GlobalErrorCode;
+import com.side.chubotamanju.global.common.ApiResult;
+import com.side.chubotamanju.global.exception.enums.GlobalErrorCode;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

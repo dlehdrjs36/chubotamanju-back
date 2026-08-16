@@ -1,6 +1,6 @@
-package com.side.daisso.global.exception.enums;
+package com.side.chubotamanju.global.exception.enums;
 
-import com.side.daisso.global.exception.ErrorCode;
+import com.side.chubotamanju.global.exception.ErrorCode;
 import org.springframework.http.HttpStatus;
 
 /**

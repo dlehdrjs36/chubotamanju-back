@@ -1,4 +1,4 @@
-package com.side.daisso.global.exception;
+package com.side.chubotamanju.global.exception;
 
 /**
  * 비즈니스 에러 정의

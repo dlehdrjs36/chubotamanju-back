@@ -1,4 +1,4 @@
-package com.side.daisso.global.exception;
+package com.side.chubotamanju.global.exception;
 
 import org.springframework.http.HttpStatus;
 

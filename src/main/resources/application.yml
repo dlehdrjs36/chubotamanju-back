@@ -1,21 +1,51 @@
 server:
   port: 8081
 
+jwt:
+  secret: "${JWT_SECRET}"
+  access-expiration: 86400000 # 액세스 토큰 만료일 24시간
+  refresh-expiration: 604800000 # 리프레시 토큰“ 만료일 7일
+
 spring:
   application:
-    name: daisso
+    name: chubotamanju-back
+
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: "jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:}?sslMode=REQUIRED"
-    username: "${DB_ADMIN_ID:root}"
-    password: "${DB_ADMIN_PASSWORD:dglee}"
+    username: "${DB_ADMIN_ID}"
+    password: "${DB_ADMIN_PASSWORD}"
+
   jpa:
+    show-sql: true
     hibernate:
       ddl-auto: none
-    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+
   messages:
     basename:
       - "messages/globalError"
+
+  security:
+    oauth2:
+      client:
+        provider: # 공급자 설정
+          discord:
+            authorization-uri: https://discord.com/oauth2/authorize
+            token-uri: https://discord.com/api/oauth2/token
+            user-info-uri: https://discord.com/api/users/@me
+            user-name-attribute: id
+        registration: # 클라이언트 설정
+          discord:
+            authorization-grant-type: authorization_code
+            client-id: "${DISCORD-CLIENT-ID}"
+            client-secret: "${DISCORD-CLIENT-SECRET}"
+            client-name: "${DISCORD-CLIENT-NAME}"
+            redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
+            client-authentication-method: client_secret_post
+            scope: identify, email
 
 # swagger 설정
 #springdoc:
@@ -30,8 +60,3 @@ spring:
 #openapi:
 #  service:
 #    url: http://localhost:8000/application
-
-jwt:
-  secret: "${JWT_SECRET:dsajkdksajdksajdsadajflkdsjkldjsklfjdslkjdklsjldksjlksdjlfkdsj}"
-  access-expiration: 86400000 # 액세스 토큰 만료일 24시간
-  refresh-expiration: 604800000 # 리프레시 토큰 만료일 7일

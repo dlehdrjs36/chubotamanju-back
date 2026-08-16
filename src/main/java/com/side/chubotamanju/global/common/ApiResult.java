@@ -1,9 +1,9 @@
-package com.side.daisso.global.common;
+package com.side.chubotamanju.global.common;
 
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 
-import com.side.daisso.global.exception.ErrorCode;
+import com.side.chubotamanju.global.exception.ErrorCode;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Getter;
 import org.springframework.http.HttpStatus;

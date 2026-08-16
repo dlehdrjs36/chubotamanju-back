@@ -3,7 +3,7 @@ server:
 
 spring:
   application:
-    name: daisso
+    name: chubotamanju-back
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: "jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:}"
@@ -15,6 +15,6 @@ spring:
     show-sql: true
 
 jwt:
-  secret: "${JWT_SECRET:dsajkdksajdksajdsadajflkdsjkldjsklfjdslkjdklsjldksjlksdjlfkdsj}"
+  secret: "${JWT_SECRET}"
   access-expiration: 86400000 # 액세스 토큰 만료일 24시간
   refresh-expiration: 604800000 # 리프레시 토큰 만료일 7일

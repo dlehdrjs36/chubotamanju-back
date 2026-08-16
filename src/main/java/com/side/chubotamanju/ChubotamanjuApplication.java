@@ -1,13 +1,13 @@
-package com.side.daisso;
+package com.side.chubotamanju;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
-public class DaissoApplication {
+public class ChubotamanjuApplication {
 
 	public static void main(String[] args) {
-		SpringApplication.run(DaissoApplication.class, args);
+		SpringApplication.run(ChubotamanjuApplication.class, args);
 	}
 
 }

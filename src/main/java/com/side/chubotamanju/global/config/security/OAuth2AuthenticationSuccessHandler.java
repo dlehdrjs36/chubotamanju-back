@@ -1,0 +1,57 @@
+package com.side.chubotamanju.global.config.security;
+
+import com.side.chubotamanju.util.JwtUtil;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseCookie;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
+import org.springframework.security.oauth2.core.user.OAuth2User;
+import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
+import org.springframework.stereotype.Component;
+import org.springframework.web.util.UriComponentsBuilder;
+
+import java.io.IOException;
+
+@Component
+@RequiredArgsConstructor
+public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
+
+    private final JwtUtil jwtTokenProvider;
+
+    @Override
+    public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
+                                        Authentication authentication) throws IOException, ServletException {
+
+        // 1. 인증 유저 정보 가져오기
+        OAuth2User oAuth2User = (OAuth2User) authentication.getPrincipal();
+
+        // 2. 인증 성공한 Provider 추출
+        OAuth2AuthenticationToken oAuth2AuthenticationToken = (OAuth2AuthenticationToken) authentication;
+        String provider = oAuth2AuthenticationToken.getAuthorizedClientRegistrationId();
+
+        // 3. 기존 JWT 생성 로직을 사용하여 토큰 발급
+        String accessToken = jwtTokenProvider.generateAccessToken(provider, oAuth2User);
+
+        // 4. 응답 헤더에 쿠키 세팅
+        ResponseCookie cookie = ResponseCookie.from("accessToken", accessToken)
+                .path("/")
+                .httpOnly(true) // 자바스크립트로 쿠키 탈취 방지 (보안)
+                .secure(false) // localhost 테스트 시 false, 운영 환경(https)은 true
+                .sameSite("Lax") // 크로스 사이트 요청 보안 설정
+                .maxAge(3600) // 쿠키 만료 시간 (초)
+                .build();
+
+        response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
+
+        // 5. JWT를 쿠키에 담아 프론트엔드 화면으로 리다이렉트
+        String targetUrl = UriComponentsBuilder
+                .fromUriString("http://localhost:5173")
+                .build().toUriString();
+
+        getRedirectStrategy().sendRedirect(request, response, targetUrl);
+    }
+}
