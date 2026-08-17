@@ -7,7 +7,7 @@ import org.springframework.stereotype.Repository;
 import java.util.Optional;
 
 @Repository
-public interface SocialUserRepository extends JpaRepository<SocialUser, Long> {
+public interface SocialUserRepository extends JpaRepository<SocialUser, Long>, SocialUserRepositoryCustom {
 
     Optional<SocialUser> findByProviderAndProviderId(String provider, String providerId);
 

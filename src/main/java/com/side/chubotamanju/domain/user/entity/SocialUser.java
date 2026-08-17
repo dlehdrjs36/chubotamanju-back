@@ -46,6 +46,6 @@ public class SocialUser {
     private String providerEmail;
 
     @Column(name = "provider_verified", nullable = false)
-    private Boolean providerVerified = false;
+    private Boolean providerVerified;
 
 }
