@@ -4,19 +4,23 @@ import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.side.chubotamanju.domain.user.entity.QSocialUser;
 import com.side.chubotamanju.domain.user.entity.SocialUser;
+
+import jakarta.annotation.PostConstruct;
 import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.support.PageableExecutionUtils;
 
 import java.util.List;
 
-public class SocialUserRepositoryImpl implements SocialUserRepositoryCustom {
+public class SocialUserRepositoryCustomImpl implements SocialUserRepositoryCustom {
+    @PersistenceContext
+    private EntityManager em;
+    private JPAQueryFactory queryFactory;
 
-    private final JPAQueryFactory queryFactory;
-
-    public SocialUserRepositoryImpl(EntityManager em) {
+    @PostConstruct
+    public void init() {
         this.queryFactory = new JPAQueryFactory(em);
     }
 

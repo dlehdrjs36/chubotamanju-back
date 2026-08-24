@@ -1,6 +1,6 @@
 package com.side.chubotamanju.domain.user.service;
 
-import com.side.chubotamanju.domain.user.service.query.UserQueryService;
+import com.side.chubotamanju.domain.user.service.query.SocialUserQueryService;
 import com.side.chubotamanju.global.config.security.ProviderUser;
 import org.jspecify.annotations.Nullable;
 import org.springframework.security.oauth2.client.registration.ClientRegistration;
@@ -14,8 +14,8 @@ import org.springframework.stereotype.Service;
 @Service
 public class CustomOAuth2UserService extends AbstractOAuth2UserService implements OAuth2UserService<OAuth2UserRequest, OAuth2User> {
 
-    public CustomOAuth2UserService(UserQueryService userQueryService, UserService userService) {
-        super(userQueryService, userService);
+    public CustomOAuth2UserService(SocialUserQueryService socialUserQueryService, SocialUserService socialUserService) {
+        super(socialUserQueryService, socialUserService);
     }
 
     @Override

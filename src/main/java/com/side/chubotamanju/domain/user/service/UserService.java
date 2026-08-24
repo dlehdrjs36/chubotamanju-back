@@ -1,40 +1,26 @@
 package com.side.chubotamanju.domain.user.service;
 
-import com.side.chubotamanju.domain.user.entity.SocialUser;
-import com.side.chubotamanju.domain.user.repository.SocialUserRepository;
-import com.side.chubotamanju.global.config.security.DiscordUser;
-import com.side.chubotamanju.global.config.security.ProviderUser;
+import com.side.chubotamanju.domain.user.entity.User;
+import com.side.chubotamanju.domain.user.repository.UserRepository;
+import com.side.chubotamanju.domain.user.service.dto.UserServiceDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Optional;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
-@Transactional
 public class UserService {
 
-    private final SocialUserRepository socialUserRepository;
+    private final UserRepository userRepository;
 
-    //회원 가입
-    public void register(ProviderUser providerUser) {
-        SocialUser.SocialUserBuilder socialUserBuilder = SocialUser.builder()
-                .provider(providerUser.getProvider())
-                .providerId(providerUser.getId())
-                .providerUsername(providerUser.getUsername())
-                .providerEmail(providerUser.getEmail());
+    public List<UserServiceDto> findByDiscordUserId(String discordUserId) {
+        List<UserServiceDto> userList = userRepository.findByDiscordUserId(discordUserId).stream()
+                .map(user -> UserServiceDto.builder()
+                        .guildId(user.getGuildId())
+                        .build())
+                .toList();
 
-        //디스코드에 특화된 필드 저장
-        if(providerUser.getProvider().equals("discord")) {
-            DiscordUser discordUser = (DiscordUser) providerUser;
-
-            socialUserBuilder.providerGlobalName(discordUser.getGlobalName())
-                    .providerVerified(discordUser.isVerified());
-        }
-
-        SocialUser socialUser = socialUserBuilder.build();
-        socialUserRepository.save(socialUser);
+        return userList;
     }
-
 }
