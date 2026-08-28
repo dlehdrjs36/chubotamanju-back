@@ -28,6 +28,10 @@ dependencies {
 	implementation 'io.github.openfeign.querydsl:querydsl-jpa:7.1'
 	annotationProcessor 'io.github.openfeign.querydsl:querydsl-apt:7.1:jpa'
 
+	//cloudflare r2
+	implementation 'software.amazon.awssdk:s3:2.31.70'
+
+	//jwt
 	implementation 'io.jsonwebtoken:jjwt-api:0.11.5'
 	runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.11.5'
 	runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.11.5'

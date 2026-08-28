@@ -3,15 +3,14 @@ package com.side.chubotamanju.domain.user.repository;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.side.chubotamanju.domain.user.entity.BountyMission;
-import com.side.chubotamanju.domain.user.entity.QBountyMission;
 import com.side.chubotamanju.domain.user.enums.BountyMissionStatus;
+import com.side.chubotamanju.domain.user.repository.dto.BountyMissionSearchCondition;
 import jakarta.annotation.PostConstruct;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
 import org.springframework.data.domain.SliceImpl;
-import org.springframework.data.support.PageableExecutionUtils;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -31,17 +30,19 @@ public class BountyMissionRepositoryCustomImpl implements BountyMissionRepositor
 
     /**
      * 길드에 등록된 미션 목록 조회
-     * @param guildId
+     * @param bountyMissionSearchCondition
+     * @param pageable
      * @return
      */
     @Override
-    public Slice<BountyMission> findBountyMissionList(String guildId, Long lastBountyMissionId, LocalDateTime lastCreatedAt, Pageable pageable) {
+    public Slice<BountyMission> findBountyMissionList(BountyMissionSearchCondition bountyMissionSearchCondition, Pageable pageable) {
         List<BountyMission> bountyMissionList = jpaQueryFactory.select(bountyMission)
                 .from(bountyMission)
                 .where(
-                        bountyMission.guildId.eq(guildId)
-                        , bountyMission.status.eq(BountyMissionStatus.OPEN)
-                        , cursorCondition(lastBountyMissionId, lastCreatedAt)
+                        bountyMission.status.eq(BountyMissionStatus.OPEN)
+                        , bountyMission.guildId.eq(bountyMissionSearchCondition.getGuildId())
+                        , requesterDiscordUserMissionEq(bountyMissionSearchCondition.getRequesterDiscordUserId())
+                        , cursorCondition(bountyMissionSearchCondition.getLastBountyMissionId(), bountyMissionSearchCondition.getLastCreatedAt())
                 )
                 .orderBy(bountyMission.createdAt.desc(), bountyMission.id.desc())
                 .limit(pageable.getPageSize() + 1) //요청 사이즈 보다 1개 더 요청
@@ -57,7 +58,18 @@ public class BountyMissionRepositoryCustomImpl implements BountyMissionRepositor
         return new SliceImpl<>(bountyMissionList, pageable, hasNext);
     }
 
-    // No-Offset 방식 조건
+    /**
+     * 유저 ID가 있을 때는 해당 유저가 등록한 미션만 조회
+     * - 서비스에서 전체 조회를 의도해 null을 넘겼다면 이 조건은 무시(pass)
+     * - 특정 페이지 조회를 의도해 유저 ID를 채워 보냈다면 해당 유저의 미션만 필터링
+     * @param requesterDiscordUserId
+     * @return
+     */
+    private BooleanExpression requesterDiscordUserMissionEq(String requesterDiscordUserId) {
+        return requesterDiscordUserId != null ? bountyMission.requesterDiscordUserId.eq(requesterDiscordUserId) : null;
+    }
+
+    // No-Offset 방식 페이징 조건
     private BooleanExpression cursorCondition(Long lastBountyMissionId, LocalDateTime lastCreatedAt) {
         if (lastCreatedAt == null || lastBountyMissionId == null) {
             return null; // 첫 페이지 조회 시에는 조건 없음

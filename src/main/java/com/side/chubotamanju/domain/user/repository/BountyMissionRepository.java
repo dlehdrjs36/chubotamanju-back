@@ -33,4 +33,7 @@ public interface BountyMissionRepository extends JpaRepository<BountyMission, Lo
     List<BountyMission> findPromotionMissions(String guildId, BountyMissionStatus status, BountyRank missionRank);
 
     Optional<BountyMission> findByIdAndGuildId(Long id, String guildId);
+
+    //디스코드 유저가 속한 길드의 미션을 조회
+    Optional<BountyMission> findByIdAndGuildIdIn(Long id, List<String> guildIdList);
 }

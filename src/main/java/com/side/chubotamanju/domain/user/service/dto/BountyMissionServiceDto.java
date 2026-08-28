@@ -55,4 +55,22 @@ public class BountyMissionServiceDto {
 
     private LocalDateTime updatedAt;
 
+    public static BountyMissionServiceDto from(BountyMission bountyMission) {
+        return BountyMissionServiceDto.builder()
+                .id(bountyMission.getId())
+                .guildId(bountyMission.getGuildId())
+                .requesterDiscordUserId(bountyMission.getRequesterDiscordUserId())
+                .title(bountyMission.getTitle())
+                .description(bountyMission.getDescription())
+                .missionRank(bountyMission.getMissionRank())
+                .rewardText(bountyMission.getRewardText())
+                .promotionOnly(bountyMission.isPromotionOnly())
+                .status(bountyMission.getStatus())
+                .completedByDiscordUserId(bountyMission.getCompletedByDiscordUserId())
+                .rewardLimit(bountyMission.getRewardLimit())
+                .rewardRemaining(bountyMission.getRewardRemaining())
+                .createdAt(bountyMission.getCreatedAt())
+                .updatedAt(bountyMission.getUpdatedAt())
+                .build();
+    }
 }

@@ -9,5 +9,6 @@ import java.util.Optional;
 
 public interface BountyHunterProfileRepository extends JpaRepository<BountyHunterProfile, Long> {
     List<BountyHunterProfile> findByGuildId(String guildId);
+    List<BountyHunterProfile> findByDiscordUserId(String discordUserId);
     Optional<BountyHunterProfile> findByGuildIdAndDiscordUserId(String guildId, String discordUserId);
 }

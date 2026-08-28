@@ -1,15 +1,18 @@
 package com.side.chubotamanju.domain.user.controller;
 
 import com.side.chubotamanju.domain.user.controller.dto.request.BountyMissionCreateRequest;
+import com.side.chubotamanju.domain.user.controller.dto.request.BountyMissionFileCreateRequest;
+import com.side.chubotamanju.domain.user.controller.dto.request.BountyMissionSubmissionCreateRequest;
 import com.side.chubotamanju.domain.user.controller.dto.response.BountyMissionResponse;
 import com.side.chubotamanju.domain.user.controller.dto.response.UserGuildResponse;
 import com.side.chubotamanju.domain.user.controller.validator.UserValidator;
+import com.side.chubotamanju.domain.user.entity.BountyMissionSubmission;
 import com.side.chubotamanju.domain.user.entity.SocialUser;
 import com.side.chubotamanju.domain.user.exception.UserNotFoundException;
-import com.side.chubotamanju.domain.user.service.BountyMissionService;
-import com.side.chubotamanju.domain.user.service.DiscordLookupService;
-import com.side.chubotamanju.domain.user.service.UserService;
+import com.side.chubotamanju.domain.user.service.*;
+import com.side.chubotamanju.domain.user.service.dto.BountyMissionFileServiceDto;
 import com.side.chubotamanju.domain.user.service.dto.BountyMissionServiceDto;
+import com.side.chubotamanju.domain.user.service.dto.BountyMissionSubmissionServiceDto;
 import com.side.chubotamanju.domain.user.service.query.SocialUserQueryService;
 import com.side.chubotamanju.global.common.ApiResult;
 import com.side.chubotamanju.global.config.security.CustomOAuth2User;
@@ -21,6 +24,7 @@ import org.springframework.http.ResponseCookie;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -36,18 +40,19 @@ public class UserController {
     private final SocialUserQueryService socialUserQueryService;
     private final UserService userService;
     private final BountyMissionService bountyMissionService;
+    private final BountyMissionSubmissionServiceFacade bountyMissionSubmissionServiceFacade;
     private final DiscordLookupService discordLookupService;
 
     @GetMapping("/me")
-    public ApiResult<SocialUser> getMe(@AuthenticationPrincipal CustomOAuth2User customOAuth2User) {
+    public ResponseEntity<ApiResult<SocialUser>> getMe(@AuthenticationPrincipal CustomOAuth2User customOAuth2User) {
         SocialUser socialUser = socialUserQueryService.findByProviderAndProviderId(customOAuth2User.getName(), customOAuth2User.getProviderId())
                 .orElseThrow(() -> new UserNotFoundException(GlobalErrorCode.USER_NOT_FOUND));
 
-        return ApiResult.success(socialUser);
+        return ResponseEntity.ok(ApiResult.success(socialUser));
     }
 
     @PostMapping("/logout")
-    public ApiResult<Void> logout(HttpServletResponse response) {
+    public ResponseEntity<ApiResult<Void>> logout(HttpServletResponse response) {
         ResponseCookie accessTokenCookie = ResponseCookie.from("accessToken", "")
                 .path("/")
                 .httpOnly(true)
@@ -58,11 +63,11 @@ public class UserController {
 
         response.addHeader(HttpHeaders.SET_COOKIE, accessTokenCookie.toString());
 
-        return ApiResult.success(null);
+        return ResponseEntity.ok(ApiResult.success(null));
     }
 
     @GetMapping("/guilds")
-    public ApiResult<List<UserGuildResponse>> getGuildsByUserId(@AuthenticationPrincipal CustomOAuth2User customOAuth2User) {
+    public ResponseEntity<ApiResult<List<UserGuildResponse>>> getGuildsByUserId(@AuthenticationPrincipal CustomOAuth2User customOAuth2User) {
         SocialUser socialUser = socialUserQueryService.findByProviderAndProviderId(customOAuth2User.getName(), customOAuth2User.getProviderId())
                 .orElseThrow(() -> new UserNotFoundException(GlobalErrorCode.USER_NOT_FOUND));
 
@@ -79,11 +84,11 @@ public class UserController {
             }
         });
 
-        return ApiResult.success(userGuildResponseList);
+        return ResponseEntity.ok(ApiResult.success(userGuildResponseList));
     }
 
     @GetMapping("/guilds/{guildId}/missions")
-    public ApiResult<List<BountyMissionResponse>> getGuildsByUserId(
+    public ResponseEntity<ApiResult<List<BountyMissionResponse>>> findGuildsMissions(
             @PathVariable(name = "guildId") String guildId
             , @RequestParam(name = "lastBountyMissionId", required = false) Long lastBountyMissionId
             , @RequestParam(name = "lastCreatedAt", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime lastCreatedAt
@@ -100,11 +105,33 @@ public class UserController {
             bountyMissionResponse.setRequesterDiscordUserId((String) discordUser.getOrDefault("global_name", discordUser.getOrDefault("username", "")));
         });
 
-        return ApiResult.success(bountyMissionResponseList);
+        return ResponseEntity.ok(ApiResult.success(bountyMissionResponseList));
+    }
+
+    @GetMapping("/guilds/{guildId}/missions/me")
+    public ResponseEntity<ApiResult<List<BountyMissionResponse>>> findMyGuildMissions(
+            @PathVariable(name = "guildId") String guildId
+            , @RequestParam(name = "lastBountyMissionId", required = false) Long lastBountyMissionId
+            , @RequestParam(name = "lastCreatedAt", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime lastCreatedAt
+            , @PageableDefault(size = 20) Pageable pageable
+            , @AuthenticationPrincipal CustomOAuth2User customOAuth2User
+    ) {
+
+        List<BountyMissionResponse> bountyMissionResponseList = bountyMissionService.findBountyMissionListByUserId(customOAuth2User.getProviderId(), guildId, lastBountyMissionId, lastCreatedAt, pageable)
+                .stream()
+                .map(bountyMissionServiceDto -> BountyMissionResponse.convert(bountyMissionServiceDto))
+                .toList();
+
+        bountyMissionResponseList.forEach(bountyMissionResponse -> {
+            Map<String, Object> discordUser = discordLookupService.getDiscordUser(bountyMissionResponse.getRequesterDiscordUserId());
+            bountyMissionResponse.setRequesterDiscordUserId((String) discordUser.getOrDefault("global_name", discordUser.getOrDefault("username", "")));
+        });
+
+        return ResponseEntity.ok(ApiResult.success(bountyMissionResponseList));
     }
 
     @PostMapping("/missions")
-    public ApiResult<Void> saveBountyMission(
+    public ResponseEntity<ApiResult<Void>> saveBountyMission(
             @AuthenticationPrincipal CustomOAuth2User customOAuth2User
             , @RequestBody BountyMissionCreateRequest bountyMissionCreateRequest) {
 
@@ -121,6 +148,35 @@ public class UserController {
                 .build();
 
         bountyMissionService.createBountyMission(bountyMissionServiceDto);
-        return ApiResult.success(null);
+        return ResponseEntity.ok(ApiResult.success(null));
     }
+
+    @PostMapping("/missions/proof")
+    public ResponseEntity<ApiResult<Void>> proofMission(
+            @AuthenticationPrincipal CustomOAuth2User customOAuth2User
+            , @RequestBody BountyMissionSubmissionCreateRequest bountyMissionSubmissionCreateRequest
+    ) {
+
+        List<BountyMissionFileServiceDto> bountyMissionFileServiceDtoList = bountyMissionSubmissionCreateRequest.getBountyMissionFileCreateRequestList()
+                .stream()
+                .map(bountyMissionFileCreateRequest -> BountyMissionFileServiceDto.builder()
+                        .originFileName(bountyMissionFileCreateRequest.getOriginFileName())
+                        .fileUrl(bountyMissionFileCreateRequest.getFileUrl())
+                        .build())
+                .toList();
+
+
+        //미션 보고 등록 처리
+        BountyMissionSubmissionServiceDto bountyMissionSubmissionServiceDto = BountyMissionSubmissionServiceDto.builder()
+                .missionId(bountyMissionSubmissionCreateRequest.getMissionId())
+                .proofText(bountyMissionSubmissionCreateRequest.getProofText())
+                .bountyMissionFileServiceDtoList(bountyMissionFileServiceDtoList)
+                .build();
+
+        bountyMissionSubmissionServiceFacade.submitMission(customOAuth2User.getProviderId(), bountyMissionSubmissionServiceDto);
+
+        return ResponseEntity.ok(ApiResult.success(null));
+    }
+
+
 }

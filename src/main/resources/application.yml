@@ -35,9 +35,9 @@ spring:
       client:
         provider: # 공급자 설정
           discord:
-            authorization-uri: https://discord.com/oauth2/authorize
-            token-uri: https://discord.com/api/oauth2/token
-            user-info-uri: https://discord.com/api/users/@me
+            authorization-uri: "https://discord.com/oauth2/authorize"
+            token-uri: "https://discord.com/api/oauth2/token"
+            user-info-uri: "https://discord.com/api/users/@me"
             user-name-attribute: id
         registration: # 클라이언트 설정
           discord:
@@ -48,6 +48,18 @@ spring:
             redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
             client-authentication-method: client_secret_post
             scope: identify, email
+
+# cloudflare r2 설정
+cloudflare:
+  r2:
+    enabled: ${R2_ENABLED:false}
+    account-id: ${R2_ACCOUNT_ID:}
+    access-key: ${R2_ACCESS_KEY:}
+    secret-key: ${R2_SECRET_KEY:}
+    bucket: ${R2_BUCKET:}
+    public-base-url: ${R2_PUBLIC_BASE_URL:}
+    worker-sign-secret: ${R2_WORKER_SIGN_SECRET:}
+    signed-url-ttl-seconds: ${R2_SIGNED_URL_TTL_SECONDS:600}
 
 # swagger 설정
 #springdoc:
