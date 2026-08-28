@@ -2,6 +2,7 @@ package com.side.chubotamanju.domain.user.repository;
 
 
 import com.side.chubotamanju.domain.user.entity.BountyMission;
+import com.side.chubotamanju.domain.user.entity.BountyMissionSubmission;
 import com.side.chubotamanju.domain.user.enums.BountyMissionStatus;
 import com.side.chubotamanju.domain.user.enums.BountyRank;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -36,4 +37,7 @@ public interface BountyMissionRepository extends JpaRepository<BountyMission, Lo
 
     //디스코드 유저가 속한 길드의 미션을 조회
     Optional<BountyMission> findByIdAndGuildIdIn(Long id, List<String> guildIdList);
+
+    //디스코드 유저가 등록한 미션 조회
+    Optional<BountyMission> findByIdAndRequesterDiscordUserId(Long id, String requesterDiscordUserId);
 }

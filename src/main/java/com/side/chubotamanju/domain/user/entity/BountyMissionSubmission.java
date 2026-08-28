@@ -1,5 +1,6 @@
 package com.side.chubotamanju.domain.user.entity;
 
+import com.side.chubotamanju.domain.user.enums.BountyMissionStatus;
 import com.side.chubotamanju.domain.user.enums.BountySubmissionStatus;
 import jakarta.persistence.*;
 import lombok.Getter;

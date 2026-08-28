@@ -5,7 +5,6 @@ import com.side.chubotamanju.domain.user.enums.BountyRank;
 import com.side.chubotamanju.domain.user.enums.TeamClearRule;
 import jakarta.persistence.*;
 import lombok.Getter;
-import lombok.Setter;
 
 import java.math.BigDecimal;
 
@@ -71,6 +70,13 @@ public class BountyMission extends BaseTimeEntity {
 
     @Column(name = "min_rating")
     private BigDecimal minRating;
+
+    /**
+     * 의뢰취소
+     */
+    public void cancle() {
+        this.status = BountyMissionStatus.CANCLE;
+    }
 
     // 미션 생성
     public static BountyMission create(String guildId, String title, String requesterDiscordUserId, String rewardText, int rewardLimit, String description) {

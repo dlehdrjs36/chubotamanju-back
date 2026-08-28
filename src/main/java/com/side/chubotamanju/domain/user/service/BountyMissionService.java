@@ -1,6 +1,7 @@
 package com.side.chubotamanju.domain.user.service;
 
 import com.side.chubotamanju.domain.user.entity.BountyMission;
+import com.side.chubotamanju.domain.user.entity.BountyMissionSubmission;
 import com.side.chubotamanju.domain.user.repository.BountyMissionRepository;
 import com.side.chubotamanju.domain.user.repository.dto.BountyMissionSearchCondition;
 import com.side.chubotamanju.domain.user.service.dto.BountyMissionServiceDto;
@@ -116,6 +117,17 @@ public class BountyMissionService {
                 .orElseThrow(() -> new IllegalArgumentException("해당 의뢰를 찾을 수 없어."));
 
         return BountyMissionServiceDto.from(bountyMission);
+    }
+
+    /**
+     * 유저 본인이 등록한 미션 취소
+     */
+    @Transactional
+    public void cancleMission(Long id, String userId) {
+        BountyMission bountyMission = bountyMissionRepository.findByIdAndRequesterDiscordUserId(id, userId)
+                .orElseThrow(() -> new IllegalArgumentException("해당 의뢰 보고를 찾을 수 없어."));
+
+        bountyMission.cancle();
     }
 
 }
