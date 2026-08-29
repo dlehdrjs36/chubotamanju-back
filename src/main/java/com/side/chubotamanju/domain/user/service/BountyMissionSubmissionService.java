@@ -54,4 +54,13 @@ public class BountyMissionSubmissionService {
         return bountyMissionSubmissionRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("해당 의뢰 보고를 찾을 수 없어."));
     }
+
+    /**
+     * 미션에 제출된 보고 목록 조회
+     * @param missionId
+     * @return
+     */
+    public List<BountyMissionSubmission> findBountyMissionSubmissionByMissionId(Long missionId) {
+        return bountyMissionSubmissionRepository.findByMissionId(missionId);
+    }
 }

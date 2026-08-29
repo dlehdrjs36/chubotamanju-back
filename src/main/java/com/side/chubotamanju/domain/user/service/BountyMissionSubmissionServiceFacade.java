@@ -1,6 +1,7 @@
 package com.side.chubotamanju.domain.user.service;
 
 import com.side.chubotamanju.domain.r2.service.R2StorageService;
+import com.side.chubotamanju.domain.user.entity.BountyMission;
 import com.side.chubotamanju.domain.user.entity.BountyMissionFile;
 import com.side.chubotamanju.domain.user.entity.BountyMissionSubmission;
 import com.side.chubotamanju.domain.user.service.dto.BountyMissionFileServiceDto;
@@ -59,5 +60,39 @@ public class BountyMissionSubmissionServiceFacade {
         //3. 디스코드 봇 알림 전송. 디스코드 봇으로 미션 등록자에게 DM 메시지 전달(디스코드 봇 api 엔드포인트 추가 필요 - 서버간 암호키를 공유하는 헤더 설정 필요)
         eventPublisher.publishEvent(new MissionSubmissionRegisterEvent(bountyMissionServiceDto));
 
+    }
+
+    /**
+     * 미션 의뢰자가 등록한 미션의 보고자들 조회
+     * @param missionId
+     * @return
+     */
+    @Transactional(readOnly = true)
+    public List<BountyMissionSubmissionServiceDto> findBountyMissionSubmissionByRequestUserIdAndMissionId(String requestUserId, Long missionId) {
+
+        //의뢰 보고자의 길드가 해당 미션이 등록된 길드에 속하는지 확인
+        BountyMission mission = bountyMissionService.findByIdAndRequesterDiscordUserId(missionId, requestUserId);
+
+        List<BountyMissionSubmissionServiceDto> bountyMissionSubmissionServiceDtoList = bountyMissionSubmissionService.findBountyMissionSubmissionByMissionId(mission.getId()).stream()
+                .map(bountyMissionSubmission -> BountyMissionSubmissionServiceDto.builder()
+                        .submissionId(bountyMissionSubmission.getId())
+                        .missionId(bountyMissionSubmission.getMissionId())
+                        .hunterDiscordUserId(bountyMissionSubmission.getHunterDiscordUserId())
+                        .proofText(bountyMissionSubmission.getProofText())
+                        .status(bountyMissionSubmission.getStatus())
+                        .createdAt(bountyMissionSubmission.getCreatedAt())
+                        .bountyMissionFileServiceDtoList(
+                                bountyMissionSubmission.getBountyMissionFileList().stream()
+                                        .map(bountyMissionFile -> BountyMissionFileServiceDto.builder()
+                                                .submissionId(bountyMissionFile.getBountyMissionSubmission().getId())
+                                                .originFileName(bountyMissionFile.getOriginFileName())
+                                                .fileUrl(r2StorageService.generateObjectAccessUrl(bountyMissionFile.getFileUrl()))
+                                                .build())
+                                        .toList()
+                        )
+                        .build())
+                .toList();
+
+        return bountyMissionSubmissionServiceDtoList;
     }
 }

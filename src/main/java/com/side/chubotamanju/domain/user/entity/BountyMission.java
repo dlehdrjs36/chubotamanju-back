@@ -75,7 +75,7 @@ public class BountyMission extends BaseTimeEntity {
      * 의뢰취소
      */
     public void cancle() {
-        this.status = BountyMissionStatus.CANCLE;
+        this.status = BountyMissionStatus.CANCEL;
     }
 
     // 미션 생성

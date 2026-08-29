@@ -8,6 +8,7 @@ import lombok.Setter;
 @Setter
 @Builder
 public class BountyMissionFileServiceDto {
+    private Long submissionId;
     private String originFileName;
     private String fileUrl;
 }

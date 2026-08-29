@@ -22,7 +22,7 @@ public class R2Controller {
     private final R2StorageService r2StorageService;
 
     /**
-     * 미션 보고용도의 presigned-url 발급
+     * 미션 보고용도 파일 업로드를 위한 presigned-url 발급
      * - 임시 경로로 첨부파일 업로드 이후에 실제 접수보고 API에서 임시 경로의 첨부파일을 실제 폴더로 옮긴다.
      * @param missionPresignedURLCreateRequest
      * @return

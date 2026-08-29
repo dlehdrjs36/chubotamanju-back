@@ -130,4 +130,15 @@ public class BountyMissionService {
         bountyMission.cancle();
     }
 
+    /**
+     * 유저가 등록한 미션인지 검증
+     * @param missionId
+     * @param requestUserId
+     * @return
+     */
+    public BountyMission findByIdAndRequesterDiscordUserId(Long missionId, String requestUserId) {
+        return bountyMissionRepository.findByIdAndRequesterDiscordUserId(missionId, requestUserId)
+                .orElseThrow(() -> new IllegalArgumentException("해당 의뢰를 찾을 수 없어."));
+    }
+
 }

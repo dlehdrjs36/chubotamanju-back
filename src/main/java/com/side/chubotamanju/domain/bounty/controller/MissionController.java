@@ -32,6 +32,7 @@ public class MissionController {
 
     private final DiscordLookupService discordLookupService;
     private final BountyMissionService bountyMissionService;
+    private final BountyMissionSubmissionService bountyMissionSubmissionService;
     private final BountyMissionSubmissionServiceFacade bountyMissionSubmissionServiceFacade;
 
     /**
@@ -160,7 +161,7 @@ public class MissionController {
      * @param customOAuth2User
      * @return
      */
-    @PostMapping("/{missionId}/cancle")
+    @PostMapping("/missions/{missionId}/cancle")
     public ResponseEntity<ApiResult<Void>> cancleMission(
             @PathVariable Long missionId
             , @AuthenticationPrincipal CustomOAuth2User customOAuth2User
@@ -170,4 +171,28 @@ public class MissionController {
 
         return ResponseEntity.ok(ApiResult.success(null));
     }
+
+    /**
+     * 미션에 보고한 헌터 목록 조회
+     * @param missionId
+     * @param customOAuth2User
+     * @return
+     */
+    @GetMapping("/missions/{missionId}/submissions")
+    public ResponseEntity<ApiResult<List<BountyMissionSubmissionServiceDto>>> findMissionSubmissionsByMissionId(
+            @PathVariable Long missionId
+            , @AuthenticationPrincipal CustomOAuth2User customOAuth2User
+    ) {
+
+        //요청한 사람이 미션의 의뢰자인지 검증
+        List<BountyMissionSubmissionServiceDto> bountyMissionSubmissionServiceDtoList = bountyMissionSubmissionServiceFacade.findBountyMissionSubmissionByRequestUserIdAndMissionId(customOAuth2User.getProviderId(), missionId);
+
+        bountyMissionSubmissionServiceDtoList.forEach(bountyMissionSubmissionServiceDto -> {
+            Map<String, Object> discordUser = discordLookupService.getDiscordUser(bountyMissionSubmissionServiceDto.getHunterDiscordUserId());
+            bountyMissionSubmissionServiceDto.setHunterDiscordUserId((String) discordUser.getOrDefault("global_name", discordUser.getOrDefault("username", "")));
+        });
+
+        return ResponseEntity.ok(ApiResult.success(bountyMissionSubmissionServiceDtoList));
+    }
+
 }

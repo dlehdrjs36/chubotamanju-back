@@ -11,10 +11,16 @@ import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 import software.amazon.awssdk.services.s3.presigner.model.PresignedPutObjectRequest;
 import software.amazon.awssdk.services.s3.presigner.model.PutObjectPresignRequest;
 
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
+import java.util.HexFormat;
 import java.util.List;
 import java.util.Map;
 
@@ -100,16 +106,30 @@ public class R2StorageService {
                 .build();
     }
 
-    // 공통 Presigned URL 생성 로직
-//    private String generatePresignedUrl(String key, HttpMethod method) {
-//
-//        GeneratePresignedUrlRequest generatePresignedUrlRequest =
-//                new GeneratePresignedUrlRequest(bucketName, key)
-//                        .withMethod(method)
-//                        .withExpiration(expiration);
-//
-//        r2S3Client.
-//        URL presignedUrl = amazonS3.generatePresignedUrl(generatePresignedUrlRequest);
-//        return presignedUrl.toString();
-//    }
+    // R2 Object 접근 Url 생성(10분)
+    public String generateObjectAccessUrl(String fileUrl) {
+        String baseUrl = properties.getPublicBaseUrl();
+        String secret = properties.getWorkerSignSecret();
+        long exp = Instant.now().getEpochSecond() + Math.max(30, properties.getSignedUrlTtlSeconds());
+        String payload = fileUrl + ":" + exp;
+        String sig = hmacSha256Hex(secret, payload);
+
+        String objectAccessUrl = "%s/object?key=%s&exp=%d&sig=%s".formatted(
+                baseUrl,
+                URLEncoder.encode(fileUrl, StandardCharsets.UTF_8),
+                exp,
+                sig);
+
+        return objectAccessUrl;
+    }
+
+    private String hmacSha256Hex(String secret, String payload) {
+        try {
+            Mac mac = Mac.getInstance("HmacSHA256");
+            mac.init(new SecretKeySpec(secret.getBytes(StandardCharsets.UTF_8), "HmacSHA256"));
+            return HexFormat.of().formatHex(mac.doFinal(payload.getBytes(StandardCharsets.UTF_8)));
+        } catch (Exception e) {
+            throw new RuntimeException("서명 URL 생성 중 오류가 발생했어.", e);
+        }
+    }
 }
