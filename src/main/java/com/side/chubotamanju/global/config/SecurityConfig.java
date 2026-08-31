@@ -5,6 +5,7 @@ import com.side.chubotamanju.domain.user.service.CustomOAuth2UserService;
 import com.side.chubotamanju.global.common.JwtProperties;
 import com.side.chubotamanju.global.config.security.OAuth2AuthenticationSuccessHandler;
 import com.side.chubotamanju.global.filter.JwtAuthenticationFilter;
+import com.side.chubotamanju.util.JwtUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
@@ -28,13 +29,14 @@ import org.springframework.web.servlet.HandlerExceptionResolver;
 public class SecurityConfig {
 
     private final JwtProperties jwtProperties;
+    private final JwtUtil jwtTokenProvider;
     private final CustomOAuth2UserService customOAuth2UserService;
     private final OAuth2AuthenticationSuccessHandler oAuth2AuthenticationSuccessHandler;
     private final HandlerExceptionResolver handlerExceptionResolver;
 
     @Bean
     public JwtAuthenticationFilter jwtAuthenticationFilter() {
-        return new JwtAuthenticationFilter(jwtProperties);
+        return new JwtAuthenticationFilter(jwtTokenProvider, jwtProperties);
     }
 
     @Bean
@@ -68,7 +70,7 @@ public class SecurityConfig {
                 .anyRequest().authenticated())
             .exceptionHandling(exception -> exception
                     .authenticationEntryPoint((request, response, authException) -> {
-                        // 💡 시큐리티 예외를 스프링 예외 핸들러(ControllerAdvice) 쪽으로 위임한다
+                        // 시큐리티 예외를 스프링 예외 핸들러(ControllerAdvice) 쪽으로 위임한다
                         handlerExceptionResolver.resolveException(request, response, null, authException);
                     })
             )

@@ -1,9 +1,9 @@
 package com.side.chubotamanju.domain.user.service;
 
 import com.side.chubotamanju.domain.r2.service.R2StorageService;
-import com.side.chubotamanju.domain.user.entity.BountyMission;
-import com.side.chubotamanju.domain.user.entity.BountyMissionFile;
-import com.side.chubotamanju.domain.user.entity.BountyMissionSubmission;
+import com.side.chubotamanju.domain.user.entity.*;
+import com.side.chubotamanju.domain.user.enums.BountyMissionStatus;
+import com.side.chubotamanju.domain.user.enums.BountySubmissionStatus;
 import com.side.chubotamanju.domain.user.service.dto.BountyMissionFileServiceDto;
 import com.side.chubotamanju.domain.user.service.dto.BountyMissionServiceDto;
 import com.side.chubotamanju.domain.user.service.dto.BountyMissionSubmissionServiceDto;
@@ -13,6 +13,7 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -23,9 +24,15 @@ public class BountyMissionSubmissionServiceFacade {
     private final BountyMissionService bountyMissionService;
     private final BountyHunterProfileService bountyHunterProfileService;
     private final BountyMissionSubmissionService bountyMissionSubmissionService;
+    private final BountyMissionAttemptService bountyMissionAttemptService;
     private final R2StorageService r2StorageService;
     private final ApplicationEventPublisher eventPublisher;
 
+    /**
+     * 미션에 의뢰 보고하기
+     * @param discordUserId
+     * @param bountyMissionSubmissionServiceDto
+     */
     @Transactional
     public void submitMission(String discordUserId, BountyMissionSubmissionServiceDto bountyMissionSubmissionServiceDto) {
         // 임시폴더에 업로드한 파일경로 추출
@@ -94,5 +101,90 @@ public class BountyMissionSubmissionServiceFacade {
                 .toList();
 
         return bountyMissionSubmissionServiceDtoList;
+    }
+
+    /**
+     * 의뢰자가 보고된 제출을 검토한다.
+     * @param guildId
+     * @param reviewerDiscordUserId
+     * @param submissionId
+     * @param approve
+     * @param note
+     */
+    @Transactional
+    public void reviewSubmission(String guildId, String reviewerDiscordUserId, Long submissionId, String note, boolean approve) {
+
+        //길드에 접수된 보고 조회
+        BountyMissionSubmission submission = bountyMissionSubmissionService.findByBountyMissionSubmissionBy(submissionId, guildId, BountySubmissionStatus.PENDING);
+        //의뢰자가 거부한 검토 처리
+        if(!approve) {
+            submission.reject();
+            return;
+        }
+
+        //의뢰자가 완료한 검토 처리
+        BountyMission mission = bountyMissionService.findByIdAndRequesterDiscordUserId(submission.getMissionId(), reviewerDiscordUserId);
+        if (mission.getStatus() != BountyMissionStatus.OPEN || mission.getRewardRemaining() <= 0) {
+            throw new IllegalArgumentException("현재 승인 가능한 일반 미션이 아니야.");
+        }
+
+        //보고 제출여부 확인
+        String hunterDiscordUserId = submission.getHunterDiscordUserId();
+        BountyMissionAttempt bountyMissionAttempt = bountyMissionAttemptService.findBountyMissionAttemptBy(mission.getId(), hunterDiscordUserId);
+        if (bountyMissionAttempt != null) {
+            throw new IllegalArgumentException("이미 클리어 확정 처리된 미션이야.");
+        }
+
+        BountyHunterProfile profile = bountyHunterProfileService.findBountyHunterProfileBy(guildId, hunterDiscordUserId);
+
+        //현재 미션 랭크의 점수를 가져와서 헌터 점수 올리기
+        boolean rewardGranted = !profile.getCurrentRank().isHigherThan(mission.getMissionRank()); //수행한 미션 랭크보다 헌터 랭크가 높으면 리워드 못받음(형식상 데이터 처리)
+        int contributionEarned = mission.getMissionRank().getContributionReward(); //미션 랭크에 부여된 점수
+        profile.addContribution(contributionEarned);
+
+        //보고에 검토 정보 추가
+        submission.review(reviewerDiscordUserId, note, BountySubmissionStatus.APPROVED);
+
+        //미션 보수 차감
+        mission.decreaseOneRewardCount();
+
+        //미션에 보고된 다른 제출들 거부 및 미션 상태 완료 처리
+        List<String> autoRejectedHunterDiscordUserIds = new ArrayList<>();
+        if (mission.getRewardRemaining() <= 0) {
+            autoRejectedHunterDiscordUserIds = rejectOtherPendingSubmissions(mission, hunterDiscordUserId, reviewerDiscordUserId, note);
+            mission.complete(hunterDiscordUserId);
+        }
+
+        //헌터의 미션 보고 이력 등록
+        bountyMissionAttemptService.createBountyMissionAttempt(guildId, mission.getId(), hunterDiscordUserId
+                , profile.getCurrentRank()
+                , rewardGranted, mission.getRewardText(), contributionEarned);
+
+
+    }
+
+    /**
+     * 다른 미션 실패처리(선착순 방식의 미션 사용 시 동작)
+     * @param mission
+     * @param approvedHunterDiscordUserId
+     * @param reviewerDiscordUserId
+     * @param note
+     * @return
+     */
+    @Transactional
+    private List<String> rejectOtherPendingSubmissions(BountyMission mission, String approvedHunterDiscordUserId, String reviewerDiscordUserId, String note) {
+        return bountyMissionSubmissionService.findBountyMissionSubmissionBy(approvedHunterDiscordUserId, mission.getId(), BountySubmissionStatus.PENDING)
+                .stream()
+                .map(bountyMissionSubmission -> {
+
+                    bountyMissionSubmission.review(reviewerDiscordUserId
+                            , note == null || note.isBlank() ? "선착순 완료로 자동 실패" : note
+                            , BountySubmissionStatus.REJECTED
+                    );
+
+                    return bountyMissionSubmission.getHunterDiscordUserId();
+
+                })
+                .toList();
     }
 }

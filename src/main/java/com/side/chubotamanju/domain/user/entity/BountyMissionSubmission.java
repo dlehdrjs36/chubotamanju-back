@@ -62,6 +62,24 @@ public class BountyMissionSubmission extends BaseTimeEntity {
     }
 
     /**
+     * 제출 검토
+     * @param reviewerDiscordUserId
+     * @param reviewNote
+     */
+    public void review(String reviewerDiscordUserId, String reviewNote, BountySubmissionStatus status) {
+        this.reviewerDiscordUserId = reviewerDiscordUserId;
+        this.reviewNote = reviewNote;
+        this.status = status;
+    }
+
+    /**
+     * 제출 거부 처리
+     */
+    public void reject() {
+        this.status = BountySubmissionStatus.REJECTED;
+    }
+
+    /**
      * 미션 보고 생성
      * @return
      */

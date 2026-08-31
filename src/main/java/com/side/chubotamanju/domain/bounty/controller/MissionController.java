@@ -2,6 +2,7 @@ package com.side.chubotamanju.domain.bounty.controller;
 
 import com.side.chubotamanju.domain.user.controller.dto.request.BountyMissionCreateRequest;
 import com.side.chubotamanju.domain.user.controller.dto.request.BountyMissionSubmissionCreateRequest;
+import com.side.chubotamanju.domain.user.controller.dto.request.BountyMissionSubmissionReviewCreateRequest;
 import com.side.chubotamanju.domain.user.controller.dto.response.BountyMissionResponse;
 import com.side.chubotamanju.domain.user.controller.validator.UserValidator;
 import com.side.chubotamanju.domain.user.service.BountyMissionService;
@@ -195,4 +196,27 @@ public class MissionController {
         return ResponseEntity.ok(ApiResult.success(bountyMissionSubmissionServiceDtoList));
     }
 
+    /**
+     * 미션 검토
+     * @param submissionId
+     * @param bountyMissionSubmissionReviewCreateRequest
+     * @param customOAuth2User
+     * @return
+     */
+    @PostMapping("/submissions/{submissionId}/review")
+    public ResponseEntity<ApiResult<Void>> reviewSubmission(
+            @PathVariable Long submissionId
+            , @RequestBody BountyMissionSubmissionReviewCreateRequest bountyMissionSubmissionReviewCreateRequest
+            , @AuthenticationPrincipal CustomOAuth2User customOAuth2User
+    ) {
+
+        bountyMissionSubmissionServiceFacade.reviewSubmission(bountyMissionSubmissionReviewCreateRequest.getGuildId()
+                , customOAuth2User.getProviderId()
+                , submissionId
+                , bountyMissionSubmissionReviewCreateRequest.getNote()
+                , bountyMissionSubmissionReviewCreateRequest.isApprove()
+        );
+
+        return ResponseEntity.ok(ApiResult.success(null));
+    }
 }

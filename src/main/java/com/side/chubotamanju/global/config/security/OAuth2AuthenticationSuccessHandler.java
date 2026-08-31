@@ -1,5 +1,6 @@
 package com.side.chubotamanju.global.config.security;
 
+import com.side.chubotamanju.global.common.JwtProperties;
 import com.side.chubotamanju.util.JwtUtil;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -21,6 +22,7 @@ import java.io.IOException;
 public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
 
     private final JwtUtil jwtTokenProvider;
+    private final JwtProperties jwtProperties;
 
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
@@ -35,17 +37,28 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
 
         // 3. 기존 JWT 생성 로직을 사용하여 토큰 발급
         String accessToken = jwtTokenProvider.generateAccessToken(provider, oAuth2User);
+        String refreshToken = jwtTokenProvider.generateRefreshToken(provider, oAuth2User);
 
-        // 4. 응답 헤더에 쿠키 세팅
+        // 4. 응답 헤더에 쿠키 세팅(액세스 토큰, 리프레시 토큰)
         ResponseCookie cookie = ResponseCookie.from("accessToken", accessToken)
                 .path("/")
                 .httpOnly(true) // 자바스크립트로 쿠키 탈취 방지 (보안)
-                .secure(false) // localhost 테스트 시 false, 운영 환경(https)은 true
+                .secure(true) // localhost 테스트 시 false, 운영 환경(https)은 true
                 .sameSite("Lax") // 크로스 사이트 요청 보안 설정
-                .maxAge(3600) // 쿠키 만료 시간 (초)
+                .maxAge(jwtProperties.getAccessExpiration()) // 쿠키 만료 시간 (초)
                 .build();
 
         response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
+
+        ResponseCookie refreshCookie = ResponseCookie.from("refreshToken", refreshToken)
+                .path("/")
+                .httpOnly(true) // 자바스크립트로 쿠키 탈취 방지 (보안)
+                .secure(true) // localhost 테스트 시 false, 운영 환경(https)은 true
+                .sameSite("Lax") // 크로스 사이트 요청 보안 설정
+                .maxAge(jwtProperties.getRefreshExpiration()) // 쿠키 만료 시간 (초)
+                .build();
+
+        response.addHeader(HttpHeaders.SET_COOKIE, refreshCookie.toString());
 
         // 5. JWT를 쿠키에 담아 프론트엔드 화면으로 리다이렉트
         String targetUrl = UriComponentsBuilder

@@ -48,7 +48,17 @@ public class JwtUtil {
      * @return
      */
     public String generateAccessToken(String provider, OAuth2User oAuth2User) {
-        return createToken(provider, oAuth2User, jwtProperties.getAccessExpiration());
+        return createToken(provider, oAuth2User, jwtProperties.getAccessExpiration(), "access");
+    }
+
+    /**
+     * AccessToken 발급 - 소셜로그인(리프레시 토큰)
+     * @param provider
+     * @param providerId
+     * @return
+     */
+    public String generateAccessToken(String provider, String providerId) {
+        return createToken(provider, providerId, jwtProperties.getAccessExpiration(), "access");
     }
 
     /**
@@ -76,7 +86,17 @@ public class JwtUtil {
      * @return
      */
     public String generateRefreshToken(String provider, OAuth2User oAuth2User) {
-        return createToken(provider, oAuth2User, jwtProperties.getRefreshExpiration());
+        return createToken(provider, oAuth2User, jwtProperties.getRefreshExpiration(), "refresh");
+    }
+
+    /**
+     * RefreshToken 발급 - 소셜로그인(리프레시 토큰)
+     * @param provider
+     * @param providerId
+     * @return
+     */
+    public String generateRefreshToken(String provider, String providerId) {
+        return createToken(provider, providerId, jwtProperties.getRefreshExpiration(), "refresh");
     }
 
     /**
@@ -119,9 +139,9 @@ public class JwtUtil {
      * @param expiration
      * @return
      */
-    private String createToken(String provider, OAuth2User oAuth2User, long expiration) {
+    private String createToken(String provider, OAuth2User oAuth2User, long expiration, String tokenType) {
         return Jwts.builder()
-                .setClaims(createClaims(oAuth2User))
+                .setClaims(createClaims(oAuth2User, tokenType))
                 .setSubject(provider)
                 .setIssuedAt(new Date(System.currentTimeMillis()))
                 .setExpiration(new Date(System.currentTimeMillis() + expiration))
@@ -129,6 +149,22 @@ public class JwtUtil {
                 .compact();
     }
 
+    /**
+     * 토큰 생성 - 소셜로그인(리프레시 토큰)
+     * @param provider
+     * @param providerId
+     * @param expiration
+     * @return
+     */
+    private String createToken(String provider, String providerId, long expiration, String tokenType) {
+        return Jwts.builder()
+                .setClaims(createClaims(providerId, tokenType))
+                .setSubject(provider)
+                .setIssuedAt(new Date(System.currentTimeMillis()))
+                .setExpiration(new Date(System.currentTimeMillis() + expiration))
+                .signWith(getSecretKey())
+                .compact();
+    }
 
     /**
      * SecretKey 조회
@@ -168,9 +204,24 @@ public class JwtUtil {
      * @param oAuth2User
      * @return
      */
-    private static Map<String, Object> createClaims(OAuth2User oAuth2User) {
+    private static Map<String, Object> createClaims(OAuth2User oAuth2User, String tokenType) {
         Map<String, Object> claims = new HashMap<>();
         claims.put("id", oAuth2User.getAttribute("id"));
+        claims.put("type", tokenType);
+
+        return claims;
+    }
+
+    /**
+     * Claims 생성 - 소셜로그인(리프레시 토큰)
+     * - 리프레시 토큰에는 권한정보 미포함
+     * @param providerId
+     * @return
+     */
+    private static Map<String, Object> createClaims(String providerId, String tokenType) {
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("id", providerId);
+        claims.put("type", tokenType);
 
         return claims;
     }
@@ -206,7 +257,7 @@ public class JwtUtil {
      * @param token
      * @return
      */
-    private Claims extractAllClaims(String token) {
+    public Claims extractAllClaims(String token) {
         return Jwts.parserBuilder()
                 .setSigningKey(getSecretKey())
                 .build()

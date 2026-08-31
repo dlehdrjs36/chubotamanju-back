@@ -2,7 +2,9 @@ package com.side.chubotamanju.domain.user.entity;
 
 import com.side.chubotamanju.domain.user.enums.BountyRank;
 import jakarta.persistence.*;
+import lombok.AccessLevel;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
 
@@ -11,7 +13,7 @@ import java.time.LocalDateTime;
 @Entity
 @Table(name = "bounty_mission_attempts")
 @Getter
-@Setter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class BountyMissionAttempt {
 
     @Id
@@ -46,4 +48,20 @@ public class BountyMissionAttempt {
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
+
+    public static BountyMissionAttempt create(String guildId, Long missionId, String hunterDiscordUserId
+            , BountyRank hunterRank, boolean rewardGranted, String rewardText, int contributionEarned) {
+
+        BountyMissionAttempt bountyMissionAttempt = new BountyMissionAttempt();
+        bountyMissionAttempt.guildId = guildId;
+        bountyMissionAttempt.missionId = missionId;
+        bountyMissionAttempt.hunterDiscordUserId = hunterDiscordUserId;
+        bountyMissionAttempt.hunterRank = hunterRank;
+        bountyMissionAttempt.rewardGranted = rewardGranted;
+        bountyMissionAttempt.rewardText = rewardText;
+        bountyMissionAttempt.contributionEarned = contributionEarned;
+        bountyMissionAttempt.promotionAttempt = false;
+
+        return bountyMissionAttempt;
+    }
 }

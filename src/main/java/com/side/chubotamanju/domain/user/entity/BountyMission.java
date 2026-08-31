@@ -74,7 +74,7 @@ public class BountyMission extends BaseTimeEntity {
     /**
      * 의뢰취소
      */
-    public void cancle() {
+    public void cancel() {
         this.status = BountyMissionStatus.CANCEL;
     }
 
@@ -93,6 +93,21 @@ public class BountyMission extends BaseTimeEntity {
         bountyMission.promotionOnly = false;
 
         return bountyMission;
+    }
+
+    /**
+     * 미션 보수 횟수 1 차감
+     */
+    public void decreaseOneRewardCount() {
+        this.rewardRemaining = this.rewardRemaining - 1;
+    }
+
+    /**
+     * 미션 완료처리
+     */
+    public void complete(String completedByDiscordUserId) {
+        this.status = BountyMissionStatus.COMPLETED;
+        this.completedByDiscordUserId = completedByDiscordUserId;
     }
 
 }

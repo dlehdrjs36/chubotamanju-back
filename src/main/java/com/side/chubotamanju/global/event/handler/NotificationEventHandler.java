@@ -1,6 +1,7 @@
 package com.side.chubotamanju.global.event.handler;
 
 import com.side.chubotamanju.global.event.dto.MissionSubmissionRegisterEvent;
+import com.side.chubotamanju.global.event.dto.NotificationEvent;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionalEventListener;
@@ -16,10 +17,10 @@ public class NotificationEventHandler {
 
     @Async("taskExecutor")
     @TransactionalEventListener
-    public void handleMissionSubmissionRegisterEvent(MissionSubmissionRegisterEvent missionSubmissionRegisterEvent) {
+    public void handleMissionSubmissionRegisterEvent(NotificationEvent notificationEvent) {
         restClient.post()
                 .uri("/missions/submissions/complete")
-                .body(missionSubmissionRegisterEvent.getBountyMissionServiceDto())
+                .body(notificationEvent)
                 .retrieve()
                 .toBodilessEntity();
     }

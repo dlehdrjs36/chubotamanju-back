@@ -35,4 +35,14 @@ public class BountyHunterProfile extends BaseTimeEntity {
     @Column(name = "active_promotion_mission_id")
     private Long activePromotionMissionId;
 
+
+    /**
+     * 헌터가 가지고 있던 점수에 미션 랭크에 부여된 점수 추가
+     * - 미션 랭크별 배정된 점수를 기존 헌터 점수에 더한다.
+     * @param contributionEarned
+     */
+    public void addContribution(int contributionEarned) {
+        this.contribution = this.contribution + contributionEarned;
+    }
+
 }

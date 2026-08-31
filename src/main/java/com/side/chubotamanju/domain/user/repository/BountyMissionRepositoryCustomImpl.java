@@ -39,9 +39,8 @@ public class BountyMissionRepositoryCustomImpl implements BountyMissionRepositor
         List<BountyMission> bountyMissionList = jpaQueryFactory.select(bountyMission)
                 .from(bountyMission)
                 .where(
-                        bountyMission.status.eq(BountyMissionStatus.OPEN)
-                        , bountyMission.guildId.eq(bountyMissionSearchCondition.getGuildId())
-                        , requesterDiscordUserMissionEq(bountyMissionSearchCondition.getRequesterDiscordUserId())
+                        bountyMission.guildId.eq(bountyMissionSearchCondition.getGuildId())
+                        , myListFilter(bountyMissionSearchCondition.getRequesterDiscordUserId())
                         , cursorCondition(bountyMissionSearchCondition.getLastBountyMissionId(), bountyMissionSearchCondition.getLastCreatedAt())
                 )
                 .orderBy(bountyMission.createdAt.desc(), bountyMission.id.desc())
@@ -65,8 +64,10 @@ public class BountyMissionRepositoryCustomImpl implements BountyMissionRepositor
      * @param requesterDiscordUserId
      * @return
      */
-    private BooleanExpression requesterDiscordUserMissionEq(String requesterDiscordUserId) {
-        return requesterDiscordUserId != null ? bountyMission.requesterDiscordUserId.eq(requesterDiscordUserId) : null;
+    private BooleanExpression myListFilter(String requesterDiscordUserId) {
+        return requesterDiscordUserId != null
+                ? bountyMission.requesterDiscordUserId.eq(requesterDiscordUserId)
+                : bountyMission.status.eq(BountyMissionStatus.OPEN);
     }
 
     // No-Offset 방식 페이징 조건

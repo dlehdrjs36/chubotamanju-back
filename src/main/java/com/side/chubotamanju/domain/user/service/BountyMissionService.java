@@ -1,7 +1,6 @@
 package com.side.chubotamanju.domain.user.service;
 
 import com.side.chubotamanju.domain.user.entity.BountyMission;
-import com.side.chubotamanju.domain.user.entity.BountyMissionSubmission;
 import com.side.chubotamanju.domain.user.repository.BountyMissionRepository;
 import com.side.chubotamanju.domain.user.repository.dto.BountyMissionSearchCondition;
 import com.side.chubotamanju.domain.user.service.dto.BountyMissionServiceDto;
@@ -12,7 +11,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -127,7 +125,7 @@ public class BountyMissionService {
         BountyMission bountyMission = bountyMissionRepository.findByIdAndRequesterDiscordUserId(id, userId)
                 .orElseThrow(() -> new IllegalArgumentException("해당 의뢰 보고를 찾을 수 없어."));
 
-        bountyMission.cancle();
+        bountyMission.cancel();
     }
 
     /**
