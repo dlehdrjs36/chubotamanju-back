@@ -1,18 +1,18 @@
 package com.side.chubotamanju.domain.bounty.controller;
 
+import com.side.chubotamanju.domain.bounty.controller.validator.MissionValidator;
 import com.side.chubotamanju.domain.user.controller.dto.request.BountyMissionCreateRequest;
 import com.side.chubotamanju.domain.user.controller.dto.request.BountyMissionSubmissionCreateRequest;
 import com.side.chubotamanju.domain.user.controller.dto.request.BountyMissionSubmissionReviewCreateRequest;
 import com.side.chubotamanju.domain.user.controller.dto.response.BountyMissionResponse;
 import com.side.chubotamanju.domain.user.controller.validator.UserValidator;
-import com.side.chubotamanju.domain.user.service.BountyMissionService;
-import com.side.chubotamanju.domain.user.service.BountyMissionSubmissionService;
-import com.side.chubotamanju.domain.user.service.BountyMissionSubmissionServiceFacade;
-import com.side.chubotamanju.domain.user.service.DiscordLookupService;
+import com.side.chubotamanju.domain.user.service.*;
 import com.side.chubotamanju.domain.user.service.dto.BountyMissionFileServiceDto;
 import com.side.chubotamanju.domain.user.service.dto.BountyMissionServiceDto;
 import com.side.chubotamanju.domain.user.service.dto.BountyMissionSubmissionServiceDto;
 import com.side.chubotamanju.global.common.ApiResult;
+import com.side.chubotamanju.global.common.PagingRequest;
+import com.side.chubotamanju.global.common.PagingResponse;
 import com.side.chubotamanju.global.config.security.CustomOAuth2User;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
@@ -33,8 +33,11 @@ public class MissionController {
 
     private final DiscordLookupService discordLookupService;
     private final BountyMissionService bountyMissionService;
-    private final BountyMissionSubmissionService bountyMissionSubmissionService;
     private final BountyMissionSubmissionServiceFacade bountyMissionSubmissionServiceFacade;
+    private final BountyMissionAttemptService bountyMissionAttemptService;
+
+
+    public record MissionsCursor(Long lastBountyMissionId, LocalDateTime lastCreatedAt) {}
 
     /**
      * 특정 길드에 등록된 미션 목록 조회
@@ -45,14 +48,22 @@ public class MissionController {
      * @return
      */
     @GetMapping("/guilds/{guildId}/missions")
-    public ResponseEntity<ApiResult<List<BountyMissionResponse>>> findGuildsMissions(
+//    public ResponseEntity<ApiResult<List<BountyMissionResponse>>> findGuildsMissions(
+    public ResponseEntity<ApiResult<PagingResponse<BountyMissionResponse, MissionsCursor>>> findGuildsMissions(
             @PathVariable(name = "guildId") String guildId
-            , @RequestParam(name = "lastBountyMissionId", required = false) Long lastBountyMissionId
-            , @RequestParam(name = "lastCreatedAt", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime lastCreatedAt
-            , @PageableDefault(size = 20) Pageable pageable
+            , PagingRequest<MissionsCursor> pagingRequest
+//            , @RequestParam(name = "lastBountyMissionId", required = false) Long lastBountyMissionId
+//            , @RequestParam(name = "lastCreatedAt", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime lastCreatedAt
+//            , @PageableDefault(size = 20) Pageable pageable
     ) {
 
-        List<BountyMissionResponse> bountyMissionResponseList = bountyMissionService.findBountyMissionList(guildId, lastBountyMissionId, lastCreatedAt, pageable)
+//        List<BountyMissionResponse> bountyMissionResponseList = bountyMissionService.findBountyMissionList(guildId, lastBountyMissionId, lastCreatedAt, pageable)
+//                .stream()
+//                .map(bountyMissionServiceDto -> BountyMissionResponse.convert(bountyMissionServiceDto))
+//                .toList();
+
+        PagingResponse<BountyMissionServiceDto, MissionsCursor> bountyMissionList = bountyMissionService.findBountyMissionList(guildId, pagingRequest);
+        List<BountyMissionResponse> bountyMissionResponseList = bountyMissionList.getData()
                 .stream()
                 .map(bountyMissionServiceDto -> BountyMissionResponse.convert(bountyMissionServiceDto))
                 .toList();
@@ -62,7 +73,7 @@ public class MissionController {
             bountyMissionResponse.setRequesterDiscordUserId((String) discordUser.getOrDefault("global_name", discordUser.getOrDefault("username", "")));
         });
 
-        return ResponseEntity.ok(ApiResult.success(bountyMissionResponseList));
+        return ResponseEntity.ok(ApiResult.success(new PagingResponse<>(bountyMissionResponseList, bountyMissionList.isHasNext())));
     }
 
     /**
@@ -103,12 +114,12 @@ public class MissionController {
      * @return
      */
     @PostMapping("/missions")
-    public ResponseEntity<ApiResult<Void>> saveBountyMission(
+    public ResponseEntity<ApiResult<Long>> saveBountyMission(
             @AuthenticationPrincipal CustomOAuth2User customOAuth2User
             , @RequestBody BountyMissionCreateRequest bountyMissionCreateRequest) {
 
         //파라미터 복합 필드 검증
-        UserValidator.validate(bountyMissionCreateRequest);
+        MissionValidator.validate(bountyMissionCreateRequest);
 
         BountyMissionServiceDto bountyMissionServiceDto = BountyMissionServiceDto.builder()
                 .guildId(bountyMissionCreateRequest.getGuildId())
@@ -119,8 +130,7 @@ public class MissionController {
                 .requesterDiscordUserId(customOAuth2User.getProviderId())
                 .build();
 
-        bountyMissionService.createBountyMission(bountyMissionServiceDto);
-        return ResponseEntity.ok(ApiResult.success(null));
+        return ResponseEntity.ok(ApiResult.success(bountyMissionService.createBountyMission(bountyMissionServiceDto)));
     }
 
     /**
@@ -163,7 +173,7 @@ public class MissionController {
      * @return
      */
     @PostMapping("/missions/{missionId}/cancle")
-    public ResponseEntity<ApiResult<Void>> cancleMission(
+    public ResponseEntity<ApiResult<Void>> cancelMission(
             @PathVariable Long missionId
             , @AuthenticationPrincipal CustomOAuth2User customOAuth2User
     ) {
@@ -216,6 +226,31 @@ public class MissionController {
                 , bountyMissionSubmissionReviewCreateRequest.getNote()
                 , bountyMissionSubmissionReviewCreateRequest.isApprove()
         );
+
+        return ResponseEntity.ok(ApiResult.success(null));
+    }
+
+    /**
+     * 헌터의 미션 도전 기록 목록 조회
+     * 검색 옵션
+     * @return
+     */
+    @GetMapping("/attempts")
+    public ResponseEntity<ApiResult<List<Void>>> findMissionAttemptsBy(
+            @PathVariable(name = "guildId") String guildId
+            , @RequestParam(name = "lastBountyMissionId", required = false) Long lastBountyMissionId
+            , @RequestParam(name = "lastCreatedAt", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime lastCreatedAt
+            , @PageableDefault(size = 20) Pageable pageable
+            , @AuthenticationPrincipal CustomOAuth2User customOAuth2User
+    ) {
+
+        //요청한 사람이 미션의 의뢰자인지 검증
+        bountyMissionAttemptService.searchBountyMissionAttemptsBy(guildId, customOAuth2User.getProviderId(), lastBountyMissionId, lastCreatedAt, pageable);
+
+//        bountyMissionSubmissionServiceDtoList.forEach(bountyMissionSubmissionServiceDto -> {
+//            Map<String, Object> discordUser = discordLookupService.getDiscordUser(bountyMissionSubmissionServiceDto.getHunterDiscordUserId());
+//            bountyMissionSubmissionServiceDto.setHunterDiscordUserId((String) discordUser.getOrDefault("global_name", discordUser.getOrDefault("username", "")));
+//        });
 
         return ResponseEntity.ok(ApiResult.success(null));
     }

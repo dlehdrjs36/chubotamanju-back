@@ -7,13 +7,14 @@ import com.side.chubotamanju.domain.user.enums.BountySubmissionStatus;
 import com.side.chubotamanju.domain.user.service.dto.BountyMissionFileServiceDto;
 import com.side.chubotamanju.domain.user.service.dto.BountyMissionServiceDto;
 import com.side.chubotamanju.domain.user.service.dto.BountyMissionSubmissionServiceDto;
+import com.side.chubotamanju.global.event.dto.MissionSubmissionApproveReviewEvent;
 import com.side.chubotamanju.global.event.dto.MissionSubmissionRegisterEvent;
+import com.side.chubotamanju.global.event.dto.MissionSubmissionRejectReviewEvent;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -119,6 +120,7 @@ public class BountyMissionSubmissionServiceFacade {
         //의뢰자가 거부한 검토 처리
         if(!approve) {
             submission.reject();
+            eventPublisher.publishEvent(new MissionSubmissionRejectReviewEvent(List.of(BountyMissionSubmissionServiceDto.from(submission))));
             return;
         }
 
@@ -149,9 +151,31 @@ public class BountyMissionSubmissionServiceFacade {
         mission.decreaseOneRewardCount();
 
         //미션에 보고된 다른 제출들 거부 및 미션 상태 완료 처리
-        List<String> autoRejectedHunterDiscordUserIds = new ArrayList<>();
         if (mission.getRewardRemaining() <= 0) {
-            autoRejectedHunterDiscordUserIds = rejectOtherPendingSubmissions(mission, hunterDiscordUserId, reviewerDiscordUserId, note);
+            List<BountyMissionSubmissionServiceDto> bountyMissionSubmissionRejecteList = findBountyMissionSubmissionDtoBy(mission, hunterDiscordUserId, BountySubmissionStatus.PENDING)
+                    .stream()
+                    .peek(bountyMissionSubmission -> {
+                        bountyMissionSubmission.review(
+                                reviewerDiscordUserId
+                                , note == null || note.isBlank() ? "선착순 완료로 자동 실패" : note
+                                , BountySubmissionStatus.REJECTED
+                        );
+                    })
+                    .map(bountyMissionSubmission -> BountyMissionSubmissionServiceDto.builder()
+                            .submissionId(bountyMissionSubmission.getId())
+                            .missionId(bountyMissionSubmission.getMissionId())
+                            .hunterDiscordUserId(bountyMissionSubmission.getHunterDiscordUserId())
+                            .proofText(bountyMissionSubmission.getProofText())
+                            .status(bountyMissionSubmission.getStatus())
+                            .createdAt(bountyMissionSubmission.getCreatedAt())
+                            .build()
+                    )
+                    .toList();
+
+            // 거부 유저가 있으면 알림처리
+            if(!bountyMissionSubmissionRejecteList.isEmpty()) {
+                eventPublisher.publishEvent(new MissionSubmissionRejectReviewEvent(bountyMissionSubmissionRejecteList));
+            }
             mission.complete(hunterDiscordUserId);
         }
 
@@ -160,31 +184,17 @@ public class BountyMissionSubmissionServiceFacade {
                 , profile.getCurrentRank()
                 , rewardGranted, mission.getRewardText(), contributionEarned);
 
-
+        eventPublisher.publishEvent(new MissionSubmissionApproveReviewEvent(BountyMissionSubmissionServiceDto.from(submission)));
     }
 
     /**
      * 다른 미션 실패처리(선착순 방식의 미션 사용 시 동작)
      * @param mission
      * @param approvedHunterDiscordUserId
-     * @param reviewerDiscordUserId
-     * @param note
+     * @param bountySubmissionStatus
      * @return
      */
-    @Transactional
-    private List<String> rejectOtherPendingSubmissions(BountyMission mission, String approvedHunterDiscordUserId, String reviewerDiscordUserId, String note) {
-        return bountyMissionSubmissionService.findBountyMissionSubmissionBy(approvedHunterDiscordUserId, mission.getId(), BountySubmissionStatus.PENDING)
-                .stream()
-                .map(bountyMissionSubmission -> {
-
-                    bountyMissionSubmission.review(reviewerDiscordUserId
-                            , note == null || note.isBlank() ? "선착순 완료로 자동 실패" : note
-                            , BountySubmissionStatus.REJECTED
-                    );
-
-                    return bountyMissionSubmission.getHunterDiscordUserId();
-
-                })
-                .toList();
+    private List<BountyMissionSubmission> findBountyMissionSubmissionDtoBy(BountyMission mission, String approvedHunterDiscordUserId, BountySubmissionStatus bountySubmissionStatus) {
+        return bountyMissionSubmissionService.findBountyMissionSubmissionBy(approvedHunterDiscordUserId, mission.getId(), bountySubmissionStatus);
     }
 }

@@ -6,7 +6,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.List;
 import java.util.Optional;
 
-public interface BountyMissionAttemptRepository extends JpaRepository<BountyMissionAttempt, Long> {
+public interface BountyMissionAttemptRepository extends JpaRepository<BountyMissionAttempt, Long>, BountyMissionAttemptRepositoryCustom {
     Optional<BountyMissionAttempt> findByMissionIdAndHunterDiscordUserId(Long missionId, String hunterDiscordUserId);
     List<BountyMissionAttempt> findByMissionId(Long missionId);
+    List<BountyMissionAttempt> findByGuildIdAndHunterDiscordUserId(String guildId, String hunterDiscordUserId);
 }

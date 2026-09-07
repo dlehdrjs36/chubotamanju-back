@@ -1,24 +1,19 @@
 package com.side.chubotamanju.global.event.dto;
 
-import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.side.chubotamanju.domain.user.service.dto.BountyMissionServiceDto;
+import lombok.AccessLevel;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
+import lombok.NoArgsConstructor;
 
 import java.util.List;
 
 @Getter
-@RequiredArgsConstructor
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class MissionSubmissionRegisterEvent extends NotificationEvent {
-    private final BountyMissionServiceDto bountyMissionServiceDto;
+    private BountyMissionServiceDto bountyMissionServiceDto;
 
-    @Override
-    public List<String> getReceiverDiscordId() {
-        return List.of(bountyMissionServiceDto.getRequesterDiscordUserId());
-    }
-
-    @Override
-    public String makeMessage() {
-        return "등록하신 의뢰에 보고가 들어왔습니다.";
+    public MissionSubmissionRegisterEvent(BountyMissionServiceDto bountyMissionServiceDto) {
+        super(List.of(bountyMissionServiceDto.getCompletedByDiscordUserId()));
+        this.bountyMissionServiceDto = bountyMissionServiceDto;
     }
 }

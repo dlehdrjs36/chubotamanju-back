@@ -4,6 +4,7 @@ package com.side.chubotamanju.global.config;
 import com.side.chubotamanju.domain.user.service.CustomOAuth2UserService;
 import com.side.chubotamanju.global.common.JwtProperties;
 import com.side.chubotamanju.global.config.security.OAuth2AuthenticationSuccessHandler;
+import com.side.chubotamanju.global.filter.ApiKeyAuthenticationFilter;
 import com.side.chubotamanju.global.filter.JwtAuthenticationFilter;
 import com.side.chubotamanju.util.JwtUtil;
 import lombok.RequiredArgsConstructor;
@@ -33,6 +34,10 @@ public class SecurityConfig {
     private final CustomOAuth2UserService customOAuth2UserService;
     private final OAuth2AuthenticationSuccessHandler oAuth2AuthenticationSuccessHandler;
     private final HandlerExceptionResolver handlerExceptionResolver;
+
+    @Bean ApiKeyAuthenticationFilter apiKeyAuthenticationFilter() {
+        return new ApiKeyAuthenticationFilter();
+    }
 
     @Bean
     public JwtAuthenticationFilter jwtAuthenticationFilter() {
@@ -74,7 +79,8 @@ public class SecurityConfig {
                         handlerExceptionResolver.resolveException(request, response, null, authException);
                     })
             )
-            .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+            .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+            .addFilterBefore(apiKeyAuthenticationFilter(), JwtAuthenticationFilter.class);
 
         return http.build();
     }

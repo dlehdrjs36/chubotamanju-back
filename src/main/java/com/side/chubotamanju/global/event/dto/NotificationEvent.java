@@ -2,7 +2,9 @@ package com.side.chubotamanju.global.event.dto;
 
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import com.side.chubotamanju.domain.user.service.dto.BountyMissionServiceDto;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 import java.util.List;
 
@@ -12,16 +14,20 @@ import java.util.List;
         property = "eventName" // JSON 바디에서 종류를 구분할 기준 필드명
 )
 @JsonSubTypes({
-        // 새로운 알림 종류가 추가되면 여기에 추가
-        @JsonSubTypes.Type(value = BountyMissionServiceDto.class, name = "missionsSubmissionsComplete")
+        @JsonSubTypes.Type(value = MissionSubmissionRegisterEvent.class, name = "missionsSubmissionsRegister")
+        , @JsonSubTypes.Type(value = MissionSubmissionRejectReviewEvent.class, name = "missionSubmissionRejectReview")
+        , @JsonSubTypes.Type(value = MissionSubmissionApproveReviewEvent.class, name = "missionSubmissionApproveReview")
 })
+@Getter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public abstract class NotificationEvent {
 
-    // 알림 받을 대상자
-    public abstract List<String> getReceiverDiscordId();
+    private List<String> receiverDiscordIdList;
 
-    // 각 자식들이 자신만의 고유 속성으로 디스코드 메시지를 만들도록 추상 메서드 정의
-    public abstract String makeMessage();
+    // 알림 받을 대상자 설정
+    protected NotificationEvent(List<String> receiverDiscordIdList) {
+        this.receiverDiscordIdList = receiverDiscordIdList;
+    }
 
     // Class<T>의 범위를 오직 NotificationEvent의 자식 클래스로만 강제 제한하여 형변환
     @SuppressWarnings("unchecked")

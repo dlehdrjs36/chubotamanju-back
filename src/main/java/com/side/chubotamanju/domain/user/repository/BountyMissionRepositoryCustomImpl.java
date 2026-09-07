@@ -2,15 +2,16 @@ package com.side.chubotamanju.domain.user.repository;
 
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQueryFactory;
+import com.side.chubotamanju.domain.bounty.controller.MissionController;
 import com.side.chubotamanju.domain.user.entity.BountyMission;
 import com.side.chubotamanju.domain.user.enums.BountyMissionStatus;
 import com.side.chubotamanju.domain.user.repository.dto.BountyMissionSearchCondition;
+import com.side.chubotamanju.global.common.PagingRequest;
+import com.side.chubotamanju.global.common.PagingResponse;
 import jakarta.annotation.PostConstruct;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Slice;
-import org.springframework.data.domain.SliceImpl;
+import org.springframework.data.domain.*;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -26,6 +27,52 @@ public class BountyMissionRepositoryCustomImpl implements BountyMissionRepositor
     @PostConstruct
     public void init() {
         this.jpaQueryFactory = new JPAQueryFactory(entityManager);
+    }
+
+    /**
+     * 길드에 등록된 미션 목록 조회(커스텀 페이징 객체)
+     * @param bountyMissionSearchCondition
+     * @param pageable
+     * @return
+     */
+    @Override
+    public PagingResponse<BountyMission, MissionController.MissionsCursor> findBountyMissionList(BountyMissionSearchCondition bountyMissionSearchCondition, PagingRequest<MissionController.MissionsCursor> pageable) {
+        List<BountyMission> bountyMissionList = jpaQueryFactory.select(bountyMission)
+                .from(bountyMission)
+                .where(
+                        bountyMission.guildId.eq(bountyMissionSearchCondition.getGuildId())
+                        , myListFilter(bountyMissionSearchCondition.getRequesterDiscordUserId())
+                        , cursorCondition(bountyMissionSearchCondition.getLastBountyMissionId(), bountyMissionSearchCondition.getLastCreatedAt())
+                )
+                .offset(pageable.isOffsetMode() ? (long) (pageable.getPage() - 1) * pageable.getPageSize() : 0L)
+                .orderBy(bountyMission.createdAt.desc(), bountyMission.id.desc())
+                .limit(pageable.getPageSize() + 1) //요청 사이즈 보다 1개 더 요청
+                .fetch();
+
+        //다음 페이지 존재 여부 확인
+        boolean hasNext = false;
+        if (bountyMissionList.size() > pageable.getPageSize()) {
+            bountyMissionList.remove(pageable.getPageSize()); // 1개 더 가져온 마지막 데이터 제거
+            hasNext = true;
+        }
+
+        // 페이징 모드일 때만 Count 쿼리 실행 후 Page 기반 응답 생성
+        if (pageable.isOffsetMode()) {
+            Long totalCount = jpaQueryFactory
+                    .select(bountyMission.count())
+                    .from(bountyMission)
+                    .fetchOne();
+
+            long total = totalCount != null ? totalCount : 0L;
+            int totalPages = (int) Math.ceil((double) total / pageable.getPageSize());
+
+//            스프링 데이터 Page을 활용해 PagingResponse 조립 (0 페이지 부터 시작하므로 -1 처리 필요)
+//            Page<BountyMission> pageResult = new PageImpl<>(bountyMissionList, PageRequest.of(pageable.getPage() - 1, pageable.getPageSize()), total);
+            return new PagingResponse<>(bountyMissionList, hasNext, pageable.getPage(), pageable.getPageSize(), totalPages);
+        }
+
+//        SliceImpl<BountyMission> bountyMissionSlice = new SliceImpl<>(bountyMissionList, PageRequest.of(0, pageable.getPageSize()), hasNext);
+        return new PagingResponse<>(bountyMissionList, hasNext);
     }
 
     /**

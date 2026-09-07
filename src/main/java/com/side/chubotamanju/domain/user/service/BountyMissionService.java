@@ -1,9 +1,12 @@
 package com.side.chubotamanju.domain.user.service;
 
+import com.side.chubotamanju.domain.bounty.controller.MissionController;
 import com.side.chubotamanju.domain.user.entity.BountyMission;
 import com.side.chubotamanju.domain.user.repository.BountyMissionRepository;
 import com.side.chubotamanju.domain.user.repository.dto.BountyMissionSearchCondition;
 import com.side.chubotamanju.domain.user.service.dto.BountyMissionServiceDto;
+import com.side.chubotamanju.global.common.PagingRequest;
+import com.side.chubotamanju.global.common.PagingResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -55,6 +58,59 @@ public class BountyMissionService {
     }
 
     /**
+     * 길드 미션 목록 조회(커스텀 페이징 객체)
+     * @param guildId
+     * @return
+     */
+    public PagingResponse<BountyMissionServiceDto, MissionController.MissionsCursor> findBountyMissionList(String guildId, PagingRequest<MissionController.MissionsCursor> pagingRequest) {
+        MissionController.MissionsCursor cursor = pagingRequest.getCursor();
+
+        BountyMissionSearchCondition bountyMissionSearchCondition = BountyMissionSearchCondition.builder()
+                .guildId(guildId)
+                .lastBountyMissionId(cursor.lastBountyMissionId())
+                .lastCreatedAt(cursor.lastCreatedAt())
+                .build();
+
+        //프로젝션으로 변경필요
+        PagingResponse<BountyMission, MissionController.MissionsCursor> bountyMissionList = bountyMissionRepository.findBountyMissionList(bountyMissionSearchCondition, pagingRequest);
+        List<BountyMissionServiceDto> bountyMissionServiceDtoList = bountyMissionList.getData().stream()
+                .map(bountyMission -> BountyMissionServiceDto
+                    .builder()
+                    .id(bountyMission.getId())
+                    .guildId(bountyMission.getGuildId())
+                    .requesterDiscordUserId(bountyMission.getRequesterDiscordUserId())
+                    .title(bountyMission.getTitle())
+                    .description(bountyMission.getDescription())
+                    .missionRank(bountyMission.getMissionRank())
+                    .rewardText(bountyMission.getRewardText())
+                    .status(bountyMission.getStatus())
+                    .rewardLimit(bountyMission.getRewardLimit())
+                    .rewardRemaining(bountyMission.getRewardRemaining())
+                    .createdAt(bountyMission.getCreatedAt())
+                    .updatedAt(bountyMission.getUpdatedAt())
+                    .build()
+                ).toList();
+
+        // 2. 무한 스크롤(Cursor) 모드이면서 결과 데이터가 존재하는 경우에만 커서 생성
+        if (!pagingRequest.isOffsetMode() && !bountyMissionList.getData().isEmpty()) {
+            // 현재 목록의 맨 마지막 아이템을 꺼내서 다음 이정표(커서) 생성
+            List<BountyMission> currentData = bountyMissionList.getData();
+            BountyMission lastItem = currentData.get(currentData.size() - 1);
+
+            MissionController.MissionsCursor nextCursor = new MissionController.MissionsCursor(
+                    lastItem.getId(),
+                    lastItem.getCreatedAt()
+            );
+
+            // 무한스크롤 전용 커서 조건 설정 후 리턴
+            bountyMissionList.setCursor(nextCursor);
+            return new PagingResponse<>(bountyMissionServiceDtoList, bountyMissionList.isHasNext());
+        }
+
+        return new PagingResponse<>(bountyMissionServiceDtoList, bountyMissionList.isHasNext(), bountyMissionList.getPage(), bountyMissionList.getPageSize(), bountyMissionList.getTotalPage());
+    }
+
+    /**
      * 길드 미션 목록 조회(메인)
      * @param guildId
      * @return
@@ -94,7 +150,7 @@ public class BountyMissionService {
      * @param bountyMissionServiceDto
      */
     @Transactional
-    public void createBountyMission(BountyMissionServiceDto bountyMissionServiceDto) {
+    public Long createBountyMission(BountyMissionServiceDto bountyMissionServiceDto) {
 
         BountyMission bountyMission = BountyMission.create(
                 bountyMissionServiceDto.getGuildId()
@@ -104,7 +160,9 @@ public class BountyMissionService {
                 , bountyMissionServiceDto.getRewardLimit()
                 , bountyMissionServiceDto.getDescription());
 
-        bountyMissionRepository.save(bountyMission);
+        BountyMission save = bountyMissionRepository.save(bountyMission);
+
+        return save.getId();
     }
 
     /**

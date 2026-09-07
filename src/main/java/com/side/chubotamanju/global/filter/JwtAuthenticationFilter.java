@@ -53,6 +53,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, 
                                   FilterChain filterChain) throws ServletException, IOException {
 
+        // 봇 인증 필터에서 인증이 성공한 경우 바로 통과
+        if (SecurityContextHolder.getContext().getAuthentication() != null) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
         //액세스 토큰 쿠키에서 액세스토큰 값 추출
         String accessToken = findCookieBy(request, "accessToken");
         if (accessToken != null && SecurityContextHolder.getContext().getAuthentication() == null) {

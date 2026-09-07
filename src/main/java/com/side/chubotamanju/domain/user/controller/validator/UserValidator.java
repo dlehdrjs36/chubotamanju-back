@@ -29,7 +29,7 @@ public class UserValidator {
     }
 
     /**
-     * 복합 규칙: 가격이 입력되었으면 재고도 반드시 입력
+     * 복합 규칙: 길드 설정되었으면 제목도 반드시 입력
      * @param request
      * @param bindingResult
      */
