@@ -13,5 +13,5 @@ import java.util.List;
 
 public interface BountyMissionRepositoryCustom {
     Slice<BountyMission> findBountyMissionList(BountyMissionSearchCondition bountyMissionSearchCondition, Pageable pageable);
-    PagingResponse<BountyMission, MissionController.MissionsCursor> findBountyMissionList(BountyMissionSearchCondition bountyMissionSearchCondition, PagingRequest<MissionController.MissionsCursor> pageable);
+    PagingResponse<BountyMission> findBountyMissionList(BountyMissionSearchCondition bountyMissionSearchCondition, PagingRequest pagingRequest);
 }

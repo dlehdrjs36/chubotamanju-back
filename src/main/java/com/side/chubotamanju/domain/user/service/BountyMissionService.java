@@ -5,6 +5,7 @@ import com.side.chubotamanju.domain.user.entity.BountyMission;
 import com.side.chubotamanju.domain.user.repository.BountyMissionRepository;
 import com.side.chubotamanju.domain.user.repository.dto.BountyMissionSearchCondition;
 import com.side.chubotamanju.domain.user.service.dto.BountyMissionServiceDto;
+import com.side.chubotamanju.global.common.CursorUtil;
 import com.side.chubotamanju.global.common.PagingRequest;
 import com.side.chubotamanju.global.common.PagingResponse;
 import lombok.RequiredArgsConstructor;
@@ -62,17 +63,20 @@ public class BountyMissionService {
      * @param guildId
      * @return
      */
-    public PagingResponse<BountyMissionServiceDto, MissionController.MissionsCursor> findBountyMissionList(String guildId, PagingRequest<MissionController.MissionsCursor> pagingRequest) {
-        MissionController.MissionsCursor cursor = pagingRequest.getCursor();
+    public PagingResponse<BountyMissionServiceDto> findBountyMissionList(String guildId, PagingRequest pagingRequest) {
+        // 요청 검색 필터 생성
+        BountyMissionSearchCondition.BountyMissionSearchConditionBuilder bountyMissionSearchConditionBuilder = BountyMissionSearchCondition.builder()
+                .guildId(guildId);
+        if(!pagingRequest.isOffsetMode()) {
+            MissionController.MissionsCursor cursor = CursorUtil.getCursorAs(pagingRequest.getCursor(), MissionController.MissionsCursor.class);
 
-        BountyMissionSearchCondition bountyMissionSearchCondition = BountyMissionSearchCondition.builder()
-                .guildId(guildId)
-                .lastBountyMissionId(cursor.lastBountyMissionId())
-                .lastCreatedAt(cursor.lastCreatedAt())
-                .build();
+            bountyMissionSearchConditionBuilder.lastBountyMissionId(cursor.lastBountyMissionId())
+                    .lastCreatedAt(cursor.lastCreatedAt());
+        }
+        BountyMissionSearchCondition bountyMissionSearchCondition = bountyMissionSearchConditionBuilder.build();
 
         //프로젝션으로 변경필요
-        PagingResponse<BountyMission, MissionController.MissionsCursor> bountyMissionList = bountyMissionRepository.findBountyMissionList(bountyMissionSearchCondition, pagingRequest);
+        PagingResponse<BountyMission> bountyMissionList = bountyMissionRepository.findBountyMissionList(bountyMissionSearchCondition, pagingRequest);
         List<BountyMissionServiceDto> bountyMissionServiceDtoList = bountyMissionList.getData().stream()
                 .map(bountyMission -> BountyMissionServiceDto
                     .builder()
@@ -103,7 +107,7 @@ public class BountyMissionService {
             );
 
             // 무한스크롤 전용 커서 조건 설정 후 리턴
-            bountyMissionList.setCursor(nextCursor);
+            bountyMissionList.setCursor(CursorUtil.encodeCursor(nextCursor));
             return new PagingResponse<>(bountyMissionServiceDtoList, bountyMissionList.isHasNext());
         }
 

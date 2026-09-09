@@ -32,11 +32,11 @@ public class BountyMissionRepositoryCustomImpl implements BountyMissionRepositor
     /**
      * 길드에 등록된 미션 목록 조회(커스텀 페이징 객체)
      * @param bountyMissionSearchCondition
-     * @param pageable
+     * @param pagingRequest
      * @return
      */
     @Override
-    public PagingResponse<BountyMission, MissionController.MissionsCursor> findBountyMissionList(BountyMissionSearchCondition bountyMissionSearchCondition, PagingRequest<MissionController.MissionsCursor> pageable) {
+    public PagingResponse<BountyMission> findBountyMissionList(BountyMissionSearchCondition bountyMissionSearchCondition, PagingRequest pagingRequest) {
         List<BountyMission> bountyMissionList = jpaQueryFactory.select(bountyMission)
                 .from(bountyMission)
                 .where(
@@ -44,31 +44,36 @@ public class BountyMissionRepositoryCustomImpl implements BountyMissionRepositor
                         , myListFilter(bountyMissionSearchCondition.getRequesterDiscordUserId())
                         , cursorCondition(bountyMissionSearchCondition.getLastBountyMissionId(), bountyMissionSearchCondition.getLastCreatedAt())
                 )
-                .offset(pageable.isOffsetMode() ? (long) (pageable.getPage() - 1) * pageable.getPageSize() : 0L)
+                .offset(pagingRequest.isOffsetMode() ? (long) (pagingRequest.getPage() - 1) * pagingRequest.getPageSize() : 0L)
                 .orderBy(bountyMission.createdAt.desc(), bountyMission.id.desc())
-                .limit(pageable.getPageSize() + 1) //요청 사이즈 보다 1개 더 요청
+                .limit(pagingRequest.getPageSize() + 1) //요청 사이즈 보다 1개 더 요청
                 .fetch();
 
         //다음 페이지 존재 여부 확인
         boolean hasNext = false;
-        if (bountyMissionList.size() > pageable.getPageSize()) {
-            bountyMissionList.remove(pageable.getPageSize()); // 1개 더 가져온 마지막 데이터 제거
+        if (bountyMissionList.size() > pagingRequest.getPageSize()) {
+            bountyMissionList.remove(pagingRequest.getPageSize()); // 1개 더 가져온 마지막 데이터 제거
             hasNext = true;
         }
 
         // 페이징 모드일 때만 Count 쿼리 실행 후 Page 기반 응답 생성
-        if (pageable.isOffsetMode()) {
+        if (pagingRequest.isOffsetMode()) {
             Long totalCount = jpaQueryFactory
                     .select(bountyMission.count())
                     .from(bountyMission)
+                    .where(
+                            bountyMission.guildId.eq(bountyMissionSearchCondition.getGuildId())
+                            , myListFilter(bountyMissionSearchCondition.getRequesterDiscordUserId())
+                            , cursorCondition(bountyMissionSearchCondition.getLastBountyMissionId(), bountyMissionSearchCondition.getLastCreatedAt())
+                    )
                     .fetchOne();
 
             long total = totalCount != null ? totalCount : 0L;
-            int totalPages = (int) Math.ceil((double) total / pageable.getPageSize());
+            int totalPages = (int) Math.ceil((double) total / pagingRequest.getPageSize());
 
 //            스프링 데이터 Page을 활용해 PagingResponse 조립 (0 페이지 부터 시작하므로 -1 처리 필요)
 //            Page<BountyMission> pageResult = new PageImpl<>(bountyMissionList, PageRequest.of(pageable.getPage() - 1, pageable.getPageSize()), total);
-            return new PagingResponse<>(bountyMissionList, hasNext, pageable.getPage(), pageable.getPageSize(), totalPages);
+            return new PagingResponse<>(bountyMissionList, hasNext, pagingRequest.getPage(), pagingRequest.getPageSize(), totalPages);
         }
 
 //        SliceImpl<BountyMission> bountyMissionSlice = new SliceImpl<>(bountyMissionList, PageRequest.of(0, pageable.getPageSize()), hasNext);

@@ -39,7 +39,7 @@ public class ApiKeyAuthenticationFilter extends OncePerRequestFilter {
         // 1. 요청에 API Key 헤더가 있고, 값이 일치하는 경우 (봇 서버의 요청)
         if (requestApiKey != null && requestApiKey.equals(expectedApiKey)) {
 
-            String botUserId = request.getHeader(ChubotaHeader.BOT_USER_ID.getName()).isEmpty() ? "botUser" : request.getHeader(ChubotaHeader.BOT_USER_ID.getName());
+            String botUserId = request.getHeader(ChubotaHeader.BOT_USER_ID.getName()) == null || request.getHeader(ChubotaHeader.BOT_USER_ID.getName()).isEmpty() ? "botUser" : request.getHeader(ChubotaHeader.BOT_USER_ID.getName());
 
             Map<String, Object> claims = new HashMap<>();
             claims.put("id", botUserId);

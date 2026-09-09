@@ -1,5 +1,6 @@
 package com.side.chubotamanju.domain.bounty.controller;
 
+import com.side.chubotamanju.domain.bounty.controller.dto.api.BountyMissionViewDto;
 import com.side.chubotamanju.domain.bounty.controller.validator.MissionValidator;
 import com.side.chubotamanju.domain.user.controller.dto.request.BountyMissionCreateRequest;
 import com.side.chubotamanju.domain.user.controller.dto.request.BountyMissionSubmissionCreateRequest;
@@ -39,19 +40,17 @@ public class MissionController {
 
     public record MissionsCursor(Long lastBountyMissionId, LocalDateTime lastCreatedAt) {}
 
-    /**
-     * 특정 길드에 등록된 미션 목록 조회
+    /***
+     * 특정 길드에 등록된 미션 목록 조회(웹)
      * @param guildId
-     * @param lastBountyMissionId
-     * @param lastCreatedAt
-     * @param pageable
+     * @param pagingRequest
      * @return
      */
     @GetMapping("/guilds/{guildId}/missions")
 //    public ResponseEntity<ApiResult<List<BountyMissionResponse>>> findGuildsMissions(
-    public ResponseEntity<ApiResult<PagingResponse<BountyMissionResponse, MissionsCursor>>> findGuildsMissions(
+    public ResponseEntity<ApiResult<PagingResponse<BountyMissionResponse>>> findGuildsMissions(
             @PathVariable(name = "guildId") String guildId
-            , PagingRequest<MissionsCursor> pagingRequest
+            , PagingRequest pagingRequest
 //            , @RequestParam(name = "lastBountyMissionId", required = false) Long lastBountyMissionId
 //            , @RequestParam(name = "lastCreatedAt", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime lastCreatedAt
 //            , @PageableDefault(size = 20) Pageable pageable
@@ -62,7 +61,7 @@ public class MissionController {
 //                .map(bountyMissionServiceDto -> BountyMissionResponse.convert(bountyMissionServiceDto))
 //                .toList();
 
-        PagingResponse<BountyMissionServiceDto, MissionsCursor> bountyMissionList = bountyMissionService.findBountyMissionList(guildId, pagingRequest);
+        PagingResponse<BountyMissionServiceDto> bountyMissionList = bountyMissionService.findBountyMissionList(guildId, pagingRequest);
         List<BountyMissionResponse> bountyMissionResponseList = bountyMissionList.getData()
                 .stream()
                 .map(bountyMissionServiceDto -> BountyMissionResponse.convert(bountyMissionServiceDto))
@@ -73,7 +72,41 @@ public class MissionController {
             bountyMissionResponse.setRequesterDiscordUserId((String) discordUser.getOrDefault("global_name", discordUser.getOrDefault("username", "")));
         });
 
-        return ResponseEntity.ok(ApiResult.success(new PagingResponse<>(bountyMissionResponseList, bountyMissionList.isHasNext())));
+        if(pagingRequest.isOffsetMode()) {
+            return ResponseEntity.ok(ApiResult.success(new PagingResponse<>(bountyMissionResponseList, bountyMissionList.isHasNext(), bountyMissionList.getPage(), bountyMissionList.getPageSize(), bountyMissionList.getTotalPage())));
+        } else {
+            return ResponseEntity.ok(ApiResult.success(new PagingResponse<>(bountyMissionResponseList, bountyMissionList.isHasNext())));
+        }
+    }
+
+
+    /**
+     * 특정 길드에 등록된 미션 목록 조회(봇 전용 API)
+     * @param guildId
+     * @return
+     */
+    @GetMapping("/guilds/{guildId}/missions/bot")
+    public ResponseEntity<ApiResult<PagingResponse<BountyMissionViewDto>>> findGuildsMissionsBot(
+            @PathVariable(name = "guildId") String guildId
+            , PagingRequest pagingRequest
+    ) {
+
+        PagingResponse<BountyMissionServiceDto> bountyMissionList = bountyMissionService.findBountyMissionList(guildId, pagingRequest);
+        List<BountyMissionViewDto> bountyMissionResponseList = bountyMissionList.getData()
+                .stream()
+                .map(bountyMissionServiceDto -> BountyMissionViewDto.convert(bountyMissionServiceDto))
+                .toList();
+
+        bountyMissionList.getData().forEach(bountyMissionResponse -> {
+            Map<String, Object> discordUser = discordLookupService.getDiscordUser(bountyMissionResponse.getRequesterDiscordUserId());
+            bountyMissionResponse.setRequesterDiscordUserId((String) discordUser.getOrDefault("global_name", discordUser.getOrDefault("username", "")));
+        });
+
+        if(pagingRequest.isOffsetMode()) {
+            return ResponseEntity.ok(ApiResult.success(new PagingResponse<>(bountyMissionResponseList, bountyMissionList.isHasNext(), bountyMissionList.getPage(), bountyMissionList.getPageSize(), bountyMissionList.getTotalPage())));
+        } else {
+            return ResponseEntity.ok(ApiResult.success(new PagingResponse<>(bountyMissionResponseList, bountyMissionList.isHasNext())));
+        }
     }
 
     /**
