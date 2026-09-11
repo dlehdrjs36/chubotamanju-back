@@ -1,6 +1,7 @@
 package com.side.chubotamanju.global.common;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
 import java.util.Base64;
 
@@ -10,6 +11,10 @@ import java.util.Base64;
  */
 public class CursorUtil {
     private static final ObjectMapper objectMapper = new ObjectMapper();
+
+    static {
+        objectMapper.registerModule(new JavaTimeModule());
+    }
 
     /**
      * Base64 문자열을 자바 커서 객체로 변환

@@ -1,8 +1,10 @@
 package com.side.chubotamanju.domain.user.entity;
 
+import com.side.chubotamanju.domain.bounty.controller.dto.api.BountyMissionUpdateRequest;
 import com.side.chubotamanju.domain.user.enums.BountyMissionStatus;
 import com.side.chubotamanju.domain.user.enums.BountyRank;
 import com.side.chubotamanju.domain.user.enums.TeamClearRule;
+import io.micrometer.common.util.StringUtils;
 import jakarta.persistence.*;
 import lombok.Getter;
 
@@ -76,6 +78,19 @@ public class BountyMission extends BaseTimeEntity {
      */
     public void cancel() {
         this.status = BountyMissionStatus.CANCEL;
+    }
+
+    /**
+     * 의뢰 수정
+     */
+    public void updateByBotRequest(BountyMissionUpdateRequest bountyMissionUpdateRequest) {
+        String botTitle = bountyMissionUpdateRequest.getTitle();
+        String botDescription = bountyMissionUpdateRequest.getDescription();
+        String botRewardText = bountyMissionUpdateRequest.getRewardText();
+
+        this.title = StringUtils.isBlank(botTitle) ? this.title : botTitle;
+        this.description = StringUtils.isBlank(botDescription) ? this.description : botDescription;
+        this.rewardText = StringUtils.isBlank(botRewardText) ? this.rewardText : botRewardText;
     }
 
     // 미션 생성

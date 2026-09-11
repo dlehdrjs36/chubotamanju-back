@@ -6,7 +6,9 @@ import com.side.chubotamanju.domain.user.entity.BountyMissionSubmission;
 import com.side.chubotamanju.domain.user.enums.BountyMissionStatus;
 import com.side.chubotamanju.domain.user.enums.BountyRank;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -40,4 +42,15 @@ public interface BountyMissionRepository extends JpaRepository<BountyMission, Lo
 
     //디스코드 유저가 등록한 미션 조회
     Optional<BountyMission> findByIdAndRequesterDiscordUserId(Long id, String requesterDiscordUserId);
+
+    //디스코드 유저가 등록한 미션 조회
+    Optional<BountyMission> findByIdAndGuildIdAndRequesterDiscordUserIdAndStatus(Long id, String guildId, String requesterDiscordUserId, BountyMissionStatus status);
+
+    //디스코드 유저가 등록한 미션 조회
+    Optional<BountyMission> findByIdAndRequesterDiscordUserIdAndStatus(Long id, String requesterDiscordUserId, BountyMissionStatus status);
+
+    //유저가 등록한 미션 삭제
+    @Modifying
+    @Query("delete from BountyMission b where b.id = :id and b.requesterDiscordUserId = :requesterDiscordUserId")
+    int deleteBountyMissionInfo(@Param("id") Long id, @Param("requesterDiscordUserId") String requesterDiscordUserId);
 }

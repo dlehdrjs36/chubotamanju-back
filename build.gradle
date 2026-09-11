@@ -24,6 +24,9 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-webmvc'
 	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:3.0.3'
 
+	// jackson에서 java8 시간/타임 객체 인식하도록 추가
+	implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.22.2'
+
 	//OpenFeign Querydsl 추가
 	implementation 'io.github.openfeign.querydsl:querydsl-jpa:7.1'
 	annotationProcessor 'io.github.openfeign.querydsl:querydsl-apt:7.1:jpa'

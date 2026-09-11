@@ -1,7 +1,10 @@
 package com.side.chubotamanju.domain.user.service;
 
 import com.side.chubotamanju.domain.bounty.controller.MissionController;
+import com.side.chubotamanju.domain.bounty.controller.dto.api.BountyMissionUpdateRequest;
+import com.side.chubotamanju.domain.bounty.controller.dto.api.BountyMissionViewDto;
 import com.side.chubotamanju.domain.user.entity.BountyMission;
+import com.side.chubotamanju.domain.user.enums.BountyMissionStatus;
 import com.side.chubotamanju.domain.user.repository.BountyMissionRepository;
 import com.side.chubotamanju.domain.user.repository.dto.BountyMissionSearchCondition;
 import com.side.chubotamanju.domain.user.service.dto.BountyMissionServiceDto;
@@ -24,20 +27,26 @@ public class BountyMissionService {
     private final BountyMissionRepository bountyMissionRepository;
 
     /**
-     * 길드에서 특정 유저가 등록한 미션 목록 조회
+     * 길드에서 특정 유저가 등록한 미션 목록 조회(웹)
      * @param guildId
      * @return
      */
-    public List<BountyMissionServiceDto> findBountyMissionListByUserId(String userId, String guildId, Long lastBountyMissionId, LocalDateTime lastCreatedAt, Pageable pageable) {
-        BountyMissionSearchCondition bountyMissionSearchCondition = BountyMissionSearchCondition.builder()
+    public PagingResponse<BountyMissionServiceDto> findBountyMissionListByUserId(String userId, String guildId, PagingRequest pagingRequest) {
+        // 요청 검색 필터 생성
+        BountyMissionSearchCondition.BountyMissionSearchConditionBuilder bountyMissionSearchConditionBuilder = BountyMissionSearchCondition.builder()
                 .guildId(guildId)
-                .requesterDiscordUserId(userId)
-                .lastBountyMissionId(lastBountyMissionId)
-                .lastCreatedAt(lastCreatedAt)
-                .build();
+                .requesterDiscordUserId(userId);
 
-        return bountyMissionRepository.findBountyMissionList(bountyMissionSearchCondition, pageable)
-                .stream()
+        if(!pagingRequest.isOffsetMode()) {
+            MissionController.MissionsCursor cursor = CursorUtil.getCursorAs(pagingRequest.getCursor(), MissionController.MissionsCursor.class);
+
+            bountyMissionSearchConditionBuilder.lastBountyMissionId(cursor.lastBountyMissionId())
+                    .lastCreatedAt(cursor.lastCreatedAt());
+        }
+        BountyMissionSearchCondition bountyMissionSearchCondition = bountyMissionSearchConditionBuilder.build();
+
+        PagingResponse<BountyMission> bountyMissionPagingResponse = bountyMissionRepository.findBountyMissionList(bountyMissionSearchCondition, pagingRequest);
+        List<BountyMissionServiceDto> bountyMissionServiceDtoList = bountyMissionPagingResponse.getData().stream()
                 .map(bountyMission -> BountyMissionServiceDto
                         .builder()
                         .id(bountyMission.getId())
@@ -56,6 +65,76 @@ public class BountyMissionService {
 
                 )
                 .toList();
+
+        // 첫 페이지 또는 무한 스크롤(Cursor) 조회 요청이면서 결과 데이터가 존재하는 경우에만 커서 생성
+        if ((pagingRequest.getPage() == 1 || !pagingRequest.isOffsetMode()) && !bountyMissionPagingResponse.getData().isEmpty()) {
+            // 현재 목록의 맨 마지막 아이템을 꺼내서 다음 이정표(커서) 생성
+            List<BountyMission> currentData = bountyMissionPagingResponse.getData();
+            BountyMission lastItem = currentData.get(currentData.size() - 1);
+
+            MissionController.MissionsCursor nextCursor = new MissionController.MissionsCursor(
+                    lastItem.getId(),
+                    lastItem.getCreatedAt()
+            );
+            // 무한스크롤 전용 커서 조건 설정
+            bountyMissionPagingResponse.setCursor(CursorUtil.encodeCursor(nextCursor));
+        }
+
+        return bountyMissionPagingResponse.changeData(bountyMissionServiceDtoList);
+    }
+
+    /**
+     * 길드에서 특정 유저가 등록한 미션 목록 조회(봇)
+     * @param guildId
+     * @return
+     */
+    public PagingResponse<BountyMissionServiceDto> findBountyMissionListByUserIdBot(String userId, String guildId, PagingRequest pagingRequest) {
+        BountyMissionSearchCondition.BountyMissionSearchConditionBuilder bountyMissionSearchConditionBuilder = BountyMissionSearchCondition.builder()
+                .guildId(guildId)
+                .requesterDiscordUserId(userId);
+
+        if(!pagingRequest.isOffsetMode()) {
+            MissionController.MissionsCursor cursor = CursorUtil.getCursorAs(pagingRequest.getCursor(), MissionController.MissionsCursor.class);
+
+            bountyMissionSearchConditionBuilder.lastBountyMissionId(cursor.lastBountyMissionId())
+                    .lastCreatedAt(cursor.lastCreatedAt());
+        }
+        BountyMissionSearchCondition bountyMissionSearchCondition = bountyMissionSearchConditionBuilder.build();
+
+        PagingResponse<BountyMission> bountyMissionList = bountyMissionRepository.findBountyMissionList(bountyMissionSearchCondition, pagingRequest);
+        List<BountyMissionServiceDto> bountyMissionServiceDtoList = bountyMissionList.getData().stream()
+                .map(bountyMission -> BountyMissionServiceDto
+                        .builder()
+                        .id(bountyMission.getId())
+                        .guildId(bountyMission.getGuildId())
+                        .requesterDiscordUserId(bountyMission.getRequesterDiscordUserId())
+                        .title(bountyMission.getTitle())
+                        .description(bountyMission.getDescription())
+                        .missionRank(bountyMission.getMissionRank())
+                        .rewardText(bountyMission.getRewardText())
+                        .status(bountyMission.getStatus())
+                        .rewardLimit(bountyMission.getRewardLimit())
+                        .rewardRemaining(bountyMission.getRewardRemaining())
+                        .createdAt(bountyMission.getCreatedAt())
+                        .updatedAt(bountyMission.getUpdatedAt())
+                        .build()
+                ).toList();
+
+        // 첫 페이지 또는 무한 스크롤(Cursor) 조회 요청이면서 결과 데이터가 존재하는 경우에만 커서 생성
+        if ((pagingRequest.getPage() == 1 || !pagingRequest.isOffsetMode()) && !bountyMissionList.getData().isEmpty()) {
+            // 현재 목록의 맨 마지막 아이템을 꺼내서 다음 이정표(커서) 생성
+            List<BountyMission> currentData = bountyMissionList.getData();
+            BountyMission lastItem = currentData.get(currentData.size() - 1);
+
+            MissionController.MissionsCursor nextCursor = new MissionController.MissionsCursor(
+                    lastItem.getId(),
+                    lastItem.getCreatedAt()
+            );
+            // 무한스크롤 전용 커서 조건 설정
+            bountyMissionList.setCursor(CursorUtil.encodeCursor(nextCursor));
+        }
+
+        return bountyMissionList.changeData(bountyMissionServiceDtoList);
     }
 
     /**
@@ -95,8 +174,8 @@ public class BountyMissionService {
                     .build()
                 ).toList();
 
-        // 2. 무한 스크롤(Cursor) 모드이면서 결과 데이터가 존재하는 경우에만 커서 생성
-        if (!pagingRequest.isOffsetMode() && !bountyMissionList.getData().isEmpty()) {
+        // 첫 페이지 또는 무한 스크롤(Cursor) 조회 요청이면서 결과 데이터가 존재하는 경우에만 커서 생성
+        if ((pagingRequest.getPage() == 1 || !pagingRequest.isOffsetMode()) && !bountyMissionList.getData().isEmpty()) {
             // 현재 목록의 맨 마지막 아이템을 꺼내서 다음 이정표(커서) 생성
             List<BountyMission> currentData = bountyMissionList.getData();
             BountyMission lastItem = currentData.get(currentData.size() - 1);
@@ -105,13 +184,11 @@ public class BountyMissionService {
                     lastItem.getId(),
                     lastItem.getCreatedAt()
             );
-
-            // 무한스크롤 전용 커서 조건 설정 후 리턴
+            // 무한스크롤 전용 커서 조건 설정
             bountyMissionList.setCursor(CursorUtil.encodeCursor(nextCursor));
-            return new PagingResponse<>(bountyMissionServiceDtoList, bountyMissionList.isHasNext());
         }
 
-        return new PagingResponse<>(bountyMissionServiceDtoList, bountyMissionList.isHasNext(), bountyMissionList.getPage(), bountyMissionList.getPageSize(), bountyMissionList.getTotalPage());
+        return bountyMissionList.changeData(bountyMissionServiceDtoList);
     }
 
     /**
@@ -180,14 +257,25 @@ public class BountyMissionService {
     }
 
     /**
-     * 유저 본인이 등록한 미션 취소
+     * 유저 본인이 등록한 미션 삭제
      */
     @Transactional
-    public void cancleMission(Long id, String userId) {
-        BountyMission bountyMission = bountyMissionRepository.findByIdAndRequesterDiscordUserId(id, userId)
-                .orElseThrow(() -> new IllegalArgumentException("해당 의뢰 보고를 찾을 수 없어."));
+    public int cancelMission(Long missionId, String requesterDiscordUserId) {
+        return bountyMissionRepository.deleteBountyMissionInfo(missionId, requesterDiscordUserId);
+    }
 
-        bountyMission.cancel();
+    /**
+     * 유저 본인이 등록한 미션 수정
+     */
+    @Transactional
+    public BountyMissionViewDto updateMission(Long missionId, String requesterDiscordUserId, BountyMissionUpdateRequest bountyMissionUpdateRequest) {
+        BountyMission bountyMission = bountyMissionRepository.findByIdAndRequesterDiscordUserIdAndStatus(missionId, requesterDiscordUserId, BountyMissionStatus.OPEN)
+                .orElseThrow(() -> new IllegalArgumentException("해당 의뢰를 찾을 수 없어."));
+
+        bountyMission.updateByBotRequest(bountyMissionUpdateRequest);
+
+        return BountyMissionViewDto.from(BountyMissionServiceDto.from(bountyMission));
+
     }
 
     /**
@@ -199,6 +287,19 @@ public class BountyMissionService {
     public BountyMission findByIdAndRequesterDiscordUserId(Long missionId, String requestUserId) {
         return bountyMissionRepository.findByIdAndRequesterDiscordUserId(missionId, requestUserId)
                 .orElseThrow(() -> new IllegalArgumentException("해당 의뢰를 찾을 수 없어."));
+    }
+
+    /**
+     * 유저가 등록한 완료되지 않은 미션 단건 조회
+     * @param missionId
+     * @param requestUserId
+     * @return
+     */
+    public BountyMissionViewDto findBountyMissionViewDtoInfo(Long missionId, String guildId, String requestUserId) {
+        BountyMission bountyMission = bountyMissionRepository.findByIdAndGuildIdAndRequesterDiscordUserIdAndStatus(missionId, guildId, requestUserId, BountyMissionStatus.OPEN)
+                .orElseThrow(() -> new IllegalArgumentException("해당 의뢰를 찾을 수 없어."));
+
+        return BountyMissionViewDto.from(BountyMissionServiceDto.from(bountyMission));
     }
 
 }

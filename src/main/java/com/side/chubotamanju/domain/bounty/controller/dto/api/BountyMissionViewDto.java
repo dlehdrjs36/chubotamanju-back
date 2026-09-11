@@ -11,7 +11,7 @@ import java.math.BigDecimal;
 @Getter
 @Setter
 @Builder
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@NoArgsConstructor
 @AllArgsConstructor
 public class BountyMissionViewDto {
     private Long id;
@@ -29,7 +29,7 @@ public class BountyMissionViewDto {
     private TeamClearRule teamClearRule;
     private Integer teamClearThreshold;
 
-    public static BountyMissionViewDto convert(BountyMissionServiceDto bountyMissionServiceDto) {
+    public static BountyMissionViewDto from(BountyMissionServiceDto bountyMissionServiceDto) {
         BountyMissionViewDto bountyMissionResponse = new BountyMissionViewDto();
         bountyMissionResponse.setId(bountyMissionServiceDto.getId());
         bountyMissionResponse.setTitle(bountyMissionServiceDto.getTitle());

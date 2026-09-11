@@ -6,6 +6,9 @@ jwt:
   access-expiration: 86400000 # 액세스 토큰 만료일 24시간
   refresh-expiration: 604800000 # 리프레시 토큰“ 만료일 7일
 
+app:
+  api-key: "${API_REQUEST_KEY}"
+
 spring:
   application:
     name: chubotamanju-back

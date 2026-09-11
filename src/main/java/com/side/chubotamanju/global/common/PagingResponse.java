@@ -33,7 +33,6 @@ public class PagingResponse<T> {
 
     // 무한 스크롤
     public PagingResponse(List<T> data, boolean hasNext) {
-//        this.cursor = cursor;
         this.hasNext = hasNext;
         this.data = data;
     }
@@ -45,6 +44,25 @@ public class PagingResponse<T> {
         this.hasNext = hasNext;
         this.data = data;
         this.totalPage = totalPage;
+    }
+
+    //내부 변환 생성자
+    private PagingResponse(String cursor, List<T> data, boolean hasNext, int page, int pageSize, int totalPage) {
+        this.cursor = cursor;
+        this.page = page;
+        this.pageSize = pageSize;
+        this.hasNext = hasNext;
+        this.data = data;
+        this.totalPage = totalPage;
+    }
+    /**
+     * 전달받은 리스트의 타입으로 반환
+     * @param data
+     * @return
+     * @param <C>
+     */
+    public <C> PagingResponse<C> changeData(List<C> data) {
+        return new PagingResponse<>(this.cursor, data, this.hasNext, this.page, this.pageSize, this.totalPage);
     }
 
     public Page<T> toBotPage() {
