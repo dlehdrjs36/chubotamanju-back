@@ -11,13 +11,14 @@ import org.springframework.web.client.RestClient;
 @Component
 public class NotificationEventHandler {
 
-    @Value("${app.api-key}")
-    private String expectedApiKey;
+    private final RestClient restClient;
 
-    private final RestClient restClient = RestClient.builder()
-            .baseUrl("http://localhost:9030/api/bot")
-            .defaultHeader(ChubotaHeader.API_KEY.getName(), expectedApiKey)
-            .build();
+    public NotificationEventHandler(@Value("${app.api-key}") String expectedApiKey) {
+        this.restClient = RestClient.builder()
+                .baseUrl("http://localhost:9030/api/bot")
+                .defaultHeader(ChubotaHeader.API_KEY.getName(), expectedApiKey)
+                .build();
+    }
 
     @Async("taskExecutor")
     @TransactionalEventListener

@@ -106,10 +106,20 @@ public class R2StorageService {
                 .build();
     }
 
-    // R2 Object 접근 Url 생성(10분)
+    /**
+     * R2 Object 접근 Url 생성(유효시간 설정)
+     * @param fileUrl
+     * @return
+     */
     public String generateObjectAccessUrl(String fileUrl) {
+        if (fileUrl == null || fileUrl.isBlank()) {
+            return "";
+        }
+
         String baseUrl = properties.getPublicBaseUrl();
         String secret = properties.getWorkerSignSecret();
+
+        //접근 만료시간
         long exp = Instant.now().getEpochSecond() + Math.max(30, properties.getSignedUrlTtlSeconds());
         String payload = fileUrl + ":" + exp;
         String sig = hmacSha256Hex(secret, payload);

@@ -1,8 +1,6 @@
 package com.side.chubotamanju.domain.bounty.controller;
 
-import com.side.chubotamanju.domain.bounty.controller.dto.api.BountyHunterSubmissionDto;
-import com.side.chubotamanju.domain.bounty.controller.dto.api.BountyMissionUpdateRequest;
-import com.side.chubotamanju.domain.bounty.controller.dto.api.BountyMissionViewDto;
+import com.side.chubotamanju.domain.bounty.controller.dto.api.*;
 import com.side.chubotamanju.domain.bounty.controller.validator.MissionValidator;
 import com.side.chubotamanju.domain.user.controller.dto.request.BountyMissionCreateRequest;
 import com.side.chubotamanju.domain.user.controller.dto.request.BountyMissionSubmissionCreateRequest;
@@ -213,13 +211,46 @@ public class MissionController {
     }
 
     /**
+     * 길드에 등록된 미션 보고(봇)
+     * @param customOAuth2User
+     * @param bountyMissionSubmissionCreateRequest
+     * @return
+     */
+    @PostMapping("/bot/missions/proof")
+    public ResponseEntity<ApiResult<Void>> proofMissionBot(
+            @AuthenticationPrincipal CustomOAuth2User customOAuth2User
+            , @RequestBody BountyMissionSubmissionCreateRequest bountyMissionSubmissionCreateRequest
+    ) {
+
+        List<BountyMissionFileServiceDto> bountyMissionFileServiceDtoList = bountyMissionSubmissionCreateRequest.getBountyMissionFileCreateRequestList()
+                .stream()
+                .map(bountyMissionFileCreateRequest -> BountyMissionFileServiceDto.builder()
+                        .originFileName(bountyMissionFileCreateRequest.getOriginFileName())
+                        .fileUrl(bountyMissionFileCreateRequest.getFileUrl())
+                        .build())
+                .toList();
+
+
+        //미션 보고 등록 처리
+        BountyMissionSubmissionServiceDto bountyMissionSubmissionServiceDto = BountyMissionSubmissionServiceDto.builder()
+                .missionId(bountyMissionSubmissionCreateRequest.getMissionId())
+                .proofText(bountyMissionSubmissionCreateRequest.getProofText())
+                .bountyMissionFileServiceDtoList(bountyMissionFileServiceDtoList)
+                .build();
+
+        bountyMissionSubmissionServiceFacade.submitMission(customOAuth2User.getProviderId(), bountyMissionSubmissionServiceDto);
+
+        return ResponseEntity.ok(ApiResult.success(null));
+    }
+
+    /**
      * 유저 본인이 등록한 미션 조회(봇)
      * @param guildId
      * @param missionId
      * @param customOAuth2User
      * @return
      */
-    @GetMapping("/guilds/{guildId}/missions/{missionId}/me/bot")
+    @GetMapping("/guilds/{guildId}/missions/{missionId}/bot")
     public ResponseEntity<ApiResult<BountyMissionViewDto>> searchMissionInfo(
             @PathVariable("guildId") String guildId
             , @PathVariable("missionId") Long missionId
@@ -307,7 +338,25 @@ public class MissionController {
     }
 
     /**
-     * 미션 검토
+     * 내가 등록한 미션들에 보고된 제출 목록 조회(봇)
+     * @param customOAuth2User
+     * @return
+     */
+    @GetMapping("/bot/guilds/{guildId}/my-missions/submissions")
+    public ResponseEntity<ApiResult<PagingResponse<BountyPendingSubmissionDto>>> findMissionSubmissions(
+            @PathVariable("guildId") String guildId
+            , @AuthenticationPrincipal CustomOAuth2User customOAuth2User
+            , PagingRequest pagingRequest
+    ) {
+
+        //요청한 사람이 미션의 의뢰자인지 검증
+        PagingResponse<BountyPendingSubmissionDto> bountyPendingSubmissionDtoList = bountyMissionSubmissionService.findBountyPendingSubmissionDtoView(guildId, customOAuth2User.getProviderId(), pagingRequest);
+
+        return ResponseEntity.ok(ApiResult.success(bountyPendingSubmissionDtoList));
+    }
+
+    /**
+     * 미션 검토(웹)
      * @param submissionId
      * @param bountyMissionSubmissionReviewCreateRequest
      * @param customOAuth2User
@@ -328,6 +377,30 @@ public class MissionController {
         );
 
         return ResponseEntity.ok(ApiResult.success(null));
+    }
+
+    /**
+     * 미션 검토 - 완료, 거부 (봇)
+     * @param submissionId
+     * @param bountyMissionSubmissionReviewCreateRequest
+     * @param customOAuth2User
+     * @return
+     */
+    @PostMapping("/bot/submissions/{submissionId}/review")
+    public ResponseEntity<ApiResult<BountySubmissionReviewResult>> reviewSubmissionBot (
+            @PathVariable Long submissionId
+            , @RequestBody BountyMissionSubmissionReviewCreateRequest bountyMissionSubmissionReviewCreateRequest
+            , @AuthenticationPrincipal CustomOAuth2User customOAuth2User
+    ) {
+
+        BountySubmissionReviewResult bountySubmissionReviewResult = bountyMissionSubmissionServiceFacade.reviewSubmissionBot(bountyMissionSubmissionReviewCreateRequest.getGuildId()
+                , customOAuth2User.getProviderId()
+                , submissionId
+                , bountyMissionSubmissionReviewCreateRequest.getNote()
+                , bountyMissionSubmissionReviewCreateRequest.isApprove()
+        );
+
+        return ResponseEntity.ok(ApiResult.success(bountySubmissionReviewResult));
     }
 
     /**
@@ -361,7 +434,7 @@ public class MissionController {
      * @param customOAuth2User
      * @return
      */
-    @GetMapping("/guilds/{guildId}/submissions/me/bot")
+    @GetMapping("/bot/guilds/{guildId}/my-submissions")
     public ResponseEntity<ApiResult<PagingResponse<BountyHunterSubmissionDto>>> findMissionSubmissionsByMissionIdBot(
             @PathVariable(name = "guildId") String guildId
             , @AuthenticationPrincipal CustomOAuth2User customOAuth2User

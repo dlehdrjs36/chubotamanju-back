@@ -30,7 +30,6 @@ public abstract class NotificationEvent {
     }
 
     // Class<T>의 범위를 오직 NotificationEvent의 자식 클래스로만 강제 제한하여 형변환
-    @SuppressWarnings("unchecked")
     public <T extends NotificationEvent> T unwrap(Class<? extends NotificationEvent> targetClass) {
         // 런타임에 실제 객체의 타입이 인자로 받은 타입과 일치하는지 안전하게 검증
         if (targetClass.isInstance(this)) {

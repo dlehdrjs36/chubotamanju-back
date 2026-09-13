@@ -27,9 +27,9 @@ public class BountyMissionSubmissionValidator {
             throw new IllegalArgumentException("현재 수행보고 가능한 의뢰가 아니야.");
         }
 
-        boolean isSubmitMission = bountyMissionSubmissionRepository.existsByMissionIdAndHunterDiscordUserIdAndStatus(bountyMission.getId(), hunterDiscordUserId, BountySubmissionStatus.PENDING);
+        boolean isSubmitMission = bountyMissionSubmissionRepository.existsByMissionIdAndHunterDiscordUserIdAndStatusIn(bountyMission.getId(), hunterDiscordUserId, List.of(BountySubmissionStatus.PENDING, BountySubmissionStatus.APPROVED));
         if (isSubmitMission) {
-            throw new IllegalArgumentException("이미 검토 대기 중인 증빙이 있어.");
+            throw new IllegalArgumentException("이미 제출한 보고가 있어.");
         }
 
         if (!StringUtils.hasText(proofText) && bountyMissionFileServiceDtoList.isEmpty()) {

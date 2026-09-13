@@ -1,10 +1,8 @@
 package com.side.chubotamanju.domain.user.entity;
 
-import com.side.chubotamanju.domain.user.enums.BountyMissionStatus;
 import com.side.chubotamanju.domain.user.enums.BountySubmissionStatus;
 import jakarta.persistence.*;
 import lombok.Getter;
-import lombok.Setter;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -21,8 +19,9 @@ public class BountyMissionSubmission extends BaseTimeEntity {
     @Column(name = "guild_id", nullable = false)
     private String guildId;
 
-    @Column(name = "mission_id", nullable = false)
-    private Long missionId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "mission_id", nullable = false)
+    private BountyMission mission;
 
     @Column(name = "hunter_discord_user_id", nullable = false)
     private String hunterDiscordUserId;
@@ -73,20 +72,13 @@ public class BountyMissionSubmission extends BaseTimeEntity {
     }
 
     /**
-     * 제출 거부 처리
-     */
-    public void reject() {
-        this.status = BountySubmissionStatus.REJECTED;
-    }
-
-    /**
      * 미션 보고 생성
      * @return
      */
-    public static BountyMissionSubmission create(String guildId, Long missionId, String hunterDiscordUserId, String proofText) {
+    public static BountyMissionSubmission create(String guildId, BountyMission mission, String hunterDiscordUserId, String proofText) {
         BountyMissionSubmission bountyMissionSubmission = new BountyMissionSubmission();
         bountyMissionSubmission.guildId = guildId;
-        bountyMissionSubmission.missionId = missionId;
+        bountyMissionSubmission.mission = mission;
         bountyMissionSubmission.hunterDiscordUserId = hunterDiscordUserId;
         bountyMissionSubmission.proofText = proofText;
         bountyMissionSubmission.status = BountySubmissionStatus.PENDING;

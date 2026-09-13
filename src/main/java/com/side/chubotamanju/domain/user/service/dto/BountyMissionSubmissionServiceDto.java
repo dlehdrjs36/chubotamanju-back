@@ -24,7 +24,7 @@ public class BountyMissionSubmissionServiceDto {
     public static BountyMissionSubmissionServiceDto from(BountyMissionSubmission bountyMissionSubmission) {
         return BountyMissionSubmissionServiceDto.builder()
                 .submissionId(bountyMissionSubmission.getId())
-                .missionId(bountyMissionSubmission.getMissionId())
+                .missionId(bountyMissionSubmission.getMission().getId())
                 .hunterDiscordUserId(bountyMissionSubmission.getHunterDiscordUserId())
                 .proofText(bountyMissionSubmission.getProofText())
                 .status(bountyMissionSubmission.getStatus())

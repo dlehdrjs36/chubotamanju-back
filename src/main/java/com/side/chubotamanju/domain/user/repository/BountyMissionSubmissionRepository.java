@@ -12,9 +12,18 @@ import java.util.List;
 import java.util.Optional;
 
 public interface BountyMissionSubmissionRepository extends JpaRepository<BountyMissionSubmission, Long>, BountyMissionSubmissionRepositoryCustom {
-    Optional<BountyMissionSubmission> findByIdAndGuildIdAndStatus(Long id, String guildId, BountySubmissionStatus status);
-    boolean existsByMissionIdAndHunterDiscordUserIdAndStatus(Long missionId, String hunterDiscordUserId, BountySubmissionStatus status);
-    List<BountyMissionSubmission> findTop30ByGuildIdAndStatusOrderByCreatedAtDesc(String guildId, BountySubmissionStatus status);
+    @Query("select s " +
+            "from BountyMissionSubmission s " +
+            "join fetch s.mission " +
+            "where s.id = :id " +
+            "and s.guildId = :guildId " +
+            "and s.status = :status")
+    Optional<BountyMissionSubmission> findByIdAndGuildIdAndStatus(@Param("id") Long id, @Param("guildId") String guildId, @Param("status") BountySubmissionStatus status);
+    boolean existsByMissionIdAndHunterDiscordUserIdAndStatusIn(Long missionId, String hunterDiscordUserId, List<BountySubmissionStatus> status);
+
+    //기존 디스코드 봇 listPendingSubmissions에서 아래의 쿼리 사용 -> findBountyPendingSubmissionDtoView로 대체
+    // List<BountyMissionSubmission> findTop30ByGuildIdAndStatusOrderByCreatedAtDesc(String guildId, BountySubmissionStatus status);
+
     List<BountyMissionSubmission> findByMissionIdAndStatus(Long missionId, BountySubmissionStatus status);
     List<BountyMissionSubmission> findTop30ByGuildIdAndHunterDiscordUserIdOrderByCreatedAtDesc(String guildId, String hunterDiscordUserId);
     List<BountyMissionSubmission> findByMissionId(Long missionId);

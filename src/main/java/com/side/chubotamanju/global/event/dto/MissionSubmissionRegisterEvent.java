@@ -13,7 +13,7 @@ public class MissionSubmissionRegisterEvent extends NotificationEvent {
     private BountyMissionServiceDto bountyMissionServiceDto;
 
     public MissionSubmissionRegisterEvent(BountyMissionServiceDto bountyMissionServiceDto) {
-        super(List.of(bountyMissionServiceDto.getCompletedByDiscordUserId()));
+        super(List.of(bountyMissionServiceDto.getRequesterDiscordUserId()));
         this.bountyMissionServiceDto = bountyMissionServiceDto;
     }
 }

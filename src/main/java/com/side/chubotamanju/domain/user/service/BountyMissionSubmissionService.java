@@ -2,6 +2,8 @@ package com.side.chubotamanju.domain.user.service;
 
 import com.side.chubotamanju.domain.bounty.controller.MissionController;
 import com.side.chubotamanju.domain.bounty.controller.dto.api.BountyHunterSubmissionDto;
+import com.side.chubotamanju.domain.bounty.controller.dto.api.BountyPendingSubmissionDto;
+import com.side.chubotamanju.domain.r2.service.R2StorageService;
 import com.side.chubotamanju.domain.user.entity.BountyMission;
 import com.side.chubotamanju.domain.user.entity.BountyMissionSubmission;
 import com.side.chubotamanju.domain.user.enums.BountySubmissionStatus;
@@ -26,6 +28,7 @@ public class BountyMissionSubmissionService {
     private final BountyMissionRepository bountyMissionRepository;
     private final BountyMissionSubmissionRepository bountyMissionSubmissionRepository;
     private final BountyMissionSubmissionValidator bountyMissionSubmissionValidator;
+    private final R2StorageService r2StorageService;
 
     /**
      * 길드의 특정 미션에 대하여 미션 보고 등록
@@ -46,7 +49,7 @@ public class BountyMissionSubmissionService {
         bountyMissionSubmissionValidator.validate(mission, hunterDiscordUserId, bountyMissionFileServiceDtoList, proofText);
 
         // BountyMissionSubmission 생성
-        BountyMissionSubmission bountyMissionSubmission = BountyMissionSubmission.create(mission.getGuildId(), missionId, hunterDiscordUserId, proofText);
+        BountyMissionSubmission bountyMissionSubmission = BountyMissionSubmission.create(mission.getGuildId(), mission, hunterDiscordUserId, proofText);
 
         return bountyMissionSubmissionRepository.save(bountyMissionSubmission);
     }
@@ -133,5 +136,36 @@ public class BountyMissionSubmissionService {
     @Transactional
     public int cancelSubmission(Long submissionId, String userId) {
         return bountyMissionSubmissionRepository.deleteBountyMissionSubmissionInfo(submissionId, userId);
+    }
+
+    /***
+     *
+     * @param guildId
+     * @param hunterDiscordUserId
+     * @param pagingRequest
+     * @return
+     */
+    public PagingResponse<BountyPendingSubmissionDto> findBountyPendingSubmissionDtoView(String guildId, String hunterDiscordUserId, PagingRequest pagingRequest) {
+
+        PagingResponse<BountyPendingSubmissionDto> bountyPendingSubmissionDtoPagingResponse = bountyMissionSubmissionRepository.findBountyPendingSubmissionDtoView(guildId, hunterDiscordUserId, pagingRequest);
+
+        // 첫 페이지 또는 무한 스크롤(Cursor) 조회 요청이면서 결과 데이터가 존재하는 경우에만 커서 생성
+        if ((pagingRequest.getPage() == 1 || !pagingRequest.isOffsetMode()) && !bountyPendingSubmissionDtoPagingResponse.getData().isEmpty()) {
+            // 현재 목록의 맨 마지막 아이템을 꺼내서 다음 이정표(커서) 생성
+            List<BountyPendingSubmissionDto> currentData = bountyPendingSubmissionDtoPagingResponse.getData();
+            BountyPendingSubmissionDto lastItem = currentData.get(currentData.size() - 1);
+
+            MissionController.MissionsCursor nextCursor = new MissionController.MissionsCursor(
+                    lastItem.getSubmissionId(),
+                    lastItem.getSubmittedAt()
+            );
+            // 무한스크롤 전용 커서 조건 설정
+            bountyPendingSubmissionDtoPagingResponse.setCursor(CursorUtil.encodeCursor(nextCursor));
+        }
+
+        bountyPendingSubmissionDtoPagingResponse.getData().forEach(bountyPendingSubmissionDto -> bountyPendingSubmissionDto.setProofImageUrl(r2StorageService.generateObjectAccessUrl(bountyPendingSubmissionDto.getProofImageUrl())));
+
+
+        return bountyPendingSubmissionDtoPagingResponse;
     }
 }
