@@ -1,5 +1,6 @@
 package com.side.chubotamanju.domain.user.service;
 
+import com.side.chubotamanju.domain.bounty.controller.dto.api.BountyProofSubmitResult;
 import com.side.chubotamanju.domain.bounty.controller.dto.api.BountySubmissionReviewResult;
 import com.side.chubotamanju.domain.r2.service.R2StorageService;
 import com.side.chubotamanju.domain.user.entity.*;
@@ -73,6 +74,45 @@ public class BountyMissionSubmissionServiceFacade {
     }
 
     /**
+     * 미션에 의뢰 보고하기(봇)
+     * @param discordUserId
+     * @param bountyMissionSubmissionServiceDto
+     */
+    @Transactional
+    public BountyProofSubmitResult submitMissionBot(String discordUserId, BountyMissionSubmissionServiceDto bountyMissionSubmissionServiceDto) {
+        // 디스코드 길드에 업로드한 파일 CDN 주소, 파일 이름 추출
+        List<BountyMissionFileServiceDto> bountyMissionFileServiceDtoList = bountyMissionSubmissionServiceDto.getBountyMissionFileServiceDtoList();
+
+        // 의뢰 보고자의 소속 길드 목록 조회
+        List<String> guildIdList = bountyHunterProfileService.findGuildIdList(discordUserId);
+
+        // 미션 의뢰 보고 등록
+        BountyMissionSubmission bountyMissionSubmission = bountyMissionSubmissionService.submitMissionProof(guildIdList, discordUserId, bountyMissionSubmissionServiceDto.getMissionId(), bountyMissionFileServiceDtoList, bountyMissionSubmissionServiceDto.getProofText());
+
+        BountyMissionServiceDto bountyMissionServiceDto = bountyMissionService.findByMissionId(bountyMissionSubmissionServiceDto.getMissionId());
+
+        // 디스코드 CDN의 주소와 파일 이름을 클라우드플레어 워커에 전달 -> 워커에서 디스코드 CDN의 주소의 이미지를 받아 R2에 저장
+        List<BountyMissionFileServiceDto> bountyMissionFileServiceDtoDiscordList = r2StorageService.generateDiscordObject(bountyMissionSubmissionServiceDto.getMissionId(), bountyMissionServiceDto.getGuildId(), bountyMissionFileServiceDtoList);
+        // 디스코드 CDN이 버킷 URL로 변환된 리스트를 이용해서 bountyMissionSubmission에 대한 BountyMissionFile 파일 목록 생성 및 연관관계 설정
+        for (BountyMissionFileServiceDto bountyMissionFileServiceDto : bountyMissionFileServiceDtoDiscordList) {
+            BountyMissionFile missionFile = BountyMissionFile.create(bountyMissionFileServiceDto.getOriginFileName(), bountyMissionFileServiceDto.getFileUrl());
+            bountyMissionSubmission.addBountyMissionFile(missionFile);
+        }
+
+        // 디스코드 봇 알림 전송. 디스코드 봇으로 미션 등록자에게 DM 메시지 전달
+        eventPublisher.publishEvent(new MissionSubmissionRegisterEvent(bountyMissionServiceDto));
+
+        // 디스코드 봇에서 요구하는 반환타입
+        return BountyProofSubmitResult.builder()
+                .submissionId(bountyMissionSubmission.getId())
+                .missionId(bountyMissionSubmission.getMission().getId())
+                .proofImageUrl(r2StorageService.generateWorkerObjectAccessUrl(bountyMissionSubmission.getBountyMissionFileList().getFirst().getFileUrl()))
+                .proofText(bountyMissionSubmission.getProofText())
+                .requesterDiscordUserId(bountyMissionSubmission.getMission().getRequesterDiscordUserId())
+                .build();
+    }
+
+    /**
      * 미션 의뢰자가 등록한 미션의 보고자들 조회
      * @param missionId
      * @return
@@ -96,7 +136,7 @@ public class BountyMissionSubmissionServiceFacade {
                                         .map(bountyMissionFile -> BountyMissionFileServiceDto.builder()
                                                 .submissionId(bountyMissionFile.getBountyMissionSubmission().getId())
                                                 .originFileName(bountyMissionFile.getOriginFileName())
-                                                .fileUrl(r2StorageService.generateObjectAccessUrl(bountyMissionFile.getFileUrl()))
+                                                .fileUrl(r2StorageService.generateWorkerObjectAccessUrl(bountyMissionFile.getFileUrl()))
                                                 .build())
                                         .toList()
                         )

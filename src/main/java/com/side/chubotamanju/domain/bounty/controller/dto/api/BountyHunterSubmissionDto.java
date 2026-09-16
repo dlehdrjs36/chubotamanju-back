@@ -2,6 +2,7 @@ package com.side.chubotamanju.domain.bounty.controller.dto.api;
 
 
 import com.side.chubotamanju.domain.user.enums.BountySubmissionStatus;
+import com.side.chubotamanju.domain.user.service.dto.BountyMissionSubmissionQueryDto;
 import com.side.chubotamanju.domain.user.service.dto.BountyMissionSubmissionServiceDto;
 import lombok.*;
 
@@ -28,6 +29,19 @@ public class BountyHunterSubmissionDto {
                 .requesterDiscordUserId(fromDto.getHunterDiscordUserId())
                 .proofText(fromDto.getProofText())
                 .status(fromDto.getStatus())
+                .build();
+    }
+
+    public static BountyHunterSubmissionDto from(BountyMissionSubmissionQueryDto fromDto) {
+        return BountyHunterSubmissionDto.builder()
+                .submissionId(fromDto.getSubmissionId())
+                .missionId(fromDto.getMissionId())
+                .missionTitle(fromDto.getMissionTitle())
+                .requesterDiscordUserId(fromDto.getRequesterDiscordUserId())
+                .rewardText(fromDto.getRewardText())
+                .proofText(fromDto.getProofText())
+                .status(fromDto.getStatus())
+                .reviewNote(fromDto.getReviewNote())
                 .build();
     }
 }

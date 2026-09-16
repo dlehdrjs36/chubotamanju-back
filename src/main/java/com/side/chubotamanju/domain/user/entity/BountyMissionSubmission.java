@@ -56,7 +56,7 @@ public class BountyMissionSubmission extends BaseTimeEntity {
         // 1. 부모 객체(1)의 리스트에 자식 객체(N)를 추가
         this.bountyMissionFileList.add(missionFile);
 
-        // 2. 자식 객체(N)에게도 부모 객체(1)가 누구인지 알려줍니다. (this = 현재 부모 객체)
+        // 2. 자식 객체(N)에게도 부모 객체(1)가 누구인지 알려준다.
         missionFile.addBountyMissionSubmission(this);
     }
 

@@ -1,8 +1,10 @@
 package com.side.chubotamanju.domain.bounty.controller.dto.api;
 
+import com.side.chubotamanju.domain.user.service.dto.BountyMissionFileServiceDto;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  * 접수된 의뢰보고 듣기 api
@@ -18,7 +20,8 @@ public class BountyPendingSubmissionDto {
     private String missionTitle;
     private String rewardText;
     private String hunterDiscordUserId;
-    private String proofImageUrl;
-    private String proofText;
+    private List<BountyMissionFileServiceDto> bountyMissionFileList;
+//    private String proofImageUrl;
+//    private String proofText;
     private LocalDateTime submittedAt;
 }

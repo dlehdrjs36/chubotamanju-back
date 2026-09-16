@@ -64,7 +64,6 @@ public class BountyMissionRepositoryCustomImpl implements BountyMissionRepositor
                     .where(
                             bountyMission.guildId.eq(bountyMissionSearchCondition.getGuildId())
                             , myListFilter(bountyMissionSearchCondition.getRequesterDiscordUserId())
-                            , cursorCondition(bountyMissionSearchCondition.getLastBountyMissionId(), bountyMissionSearchCondition.getLastCreatedAt())
                     )
                     .fetchOne();
 

@@ -10,13 +10,16 @@ import lombok.Setter;
 @NoArgsConstructor
 public class PagingRequest {
 
-    // 1. 페이징
-    private int page = 1;       // 클라이언트는 직관적으로 1, 2, 3... 보냄
-    private int pageSize;      // 한 페이지당 가져올 데이터 개수
+    /**
+     * 1. 페이징 속성
+     */
+    private int page = 1; // 첫 페이지는 1부터 시작
+    private int pageSize; // 한 페이지당 가져올 데이터 개수
 
-    // 2. 무한 스크롤(Cursor)
-    // jackson에서 제네릭 타입 형변환 문제로 base64 기반으로 처리
-    private String cursor;
+    /**
+     * 2. 무한 스크롤(Cursor) 속성
+     */
+    private String cursor; // jackson에서 제네릭 타입 형변환 문제로 base64 기반으로 처리
 
     /**
      * 현재 요청이 일반 페이징인지 판별하는 메서드

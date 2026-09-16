@@ -1,7 +1,5 @@
 package com.side.chubotamanju.domain.user.service;
 
-import com.side.chubotamanju.domain.bounty.controller.MissionController;
-import com.side.chubotamanju.domain.bounty.controller.dto.api.BountyHunterSubmissionDto;
 import com.side.chubotamanju.domain.bounty.controller.dto.api.BountyPendingSubmissionDto;
 import com.side.chubotamanju.domain.r2.service.R2StorageService;
 import com.side.chubotamanju.domain.user.entity.BountyMission;
@@ -9,16 +7,20 @@ import com.side.chubotamanju.domain.user.entity.BountyMissionSubmission;
 import com.side.chubotamanju.domain.user.enums.BountySubmissionStatus;
 import com.side.chubotamanju.domain.user.repository.BountyMissionRepository;
 import com.side.chubotamanju.domain.user.repository.BountyMissionSubmissionRepository;
+import com.side.chubotamanju.domain.user.service.dto.BountyMissionSubmissionQueryDto;
 import com.side.chubotamanju.domain.user.service.dto.BountyMissionFileServiceDto;
 import com.side.chubotamanju.domain.user.service.dto.BountyMissionSubmissionServiceDto;
 import com.side.chubotamanju.domain.user.service.validator.BountyMissionSubmissionValidator;
 import com.side.chubotamanju.global.common.CursorUtil;
+import com.side.chubotamanju.global.common.IdAndLocalDateTimeCursor;
 import com.side.chubotamanju.global.common.PagingRequest;
 import com.side.chubotamanju.global.common.PagingResponse;
+import lombok.Builder;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -41,7 +43,7 @@ public class BountyMissionSubmissionService {
     @Transactional
     public BountyMissionSubmission submitMissionProof(List<String> discordUserGuildIdList, String hunterDiscordUserId, Long missionId, List<BountyMissionFileServiceDto> bountyMissionFileServiceDtoList, String proofText) {
 
-        //의뢰 보고자의 길드가 해당 미션이 등록된 길드에 속하는지 확인
+        //의뢰 보고자가 해당 미션이 등록된 길드에 속하는지 확인
         BountyMission mission = bountyMissionRepository.findByIdAndGuildIdIn(missionId, discordUserGuildIdList)
                 .orElseThrow(() -> new IllegalArgumentException("해당 의뢰를 찾을 수 없어."));
 
@@ -94,7 +96,7 @@ public class BountyMissionSubmissionService {
             List<BountyMissionSubmission> currentData = bountyMissionSubmissionList.getData();
             BountyMissionSubmission lastItem = currentData.get(currentData.size() - 1);
 
-            MissionController.MissionsCursor nextCursor = new MissionController.MissionsCursor(
+            IdAndLocalDateTimeCursor nextCursor = new IdAndLocalDateTimeCursor(
                     lastItem.getId(),
                     lastItem.getCreatedAt()
             );
@@ -105,17 +107,48 @@ public class BountyMissionSubmissionService {
         return bountyMissionSubmissionList.changeData(bountyMissionServiceDtoList);
     }
 
+
+    // findBountyMissionSubmissionListView 검색 조건
+    @Builder
+    public record BountyMissionSubmissionSearchCondition(String guildId, String hunterDiscordUserId, Long lastBountyMissionSubmissionId, LocalDateTime lastCreatedAt) {}
+
     /**
-     * 길드에서 의뢰 수행자가 미션에 제출한 보고 목록 조회(봇)
-     * - 무한스크롤 X, 오프셋 방식으로 동작
+     * 길드에서 의뢰 수행자가 미션에 제출한 보고 목록 조회(웹, 봇)
+     * - 봇(오프셋 방식), 웹(무한스크롤)
      * @param guildId
      * @param hunterDiscordUserId
      * @param pagingRequest
      * @return
      */
     @Transactional(readOnly = true)
-    public PagingResponse<BountyHunterSubmissionDto> findBountyMissionSubmissionListView(String guildId, String hunterDiscordUserId, PagingRequest pagingRequest) {
-        return bountyMissionSubmissionRepository.findBountyMissionSubmissionListView(guildId, hunterDiscordUserId, pagingRequest);
+    public PagingResponse<BountyMissionSubmissionQueryDto> findBountyMissionSubmissionListView(String guildId, String hunterDiscordUserId, PagingRequest pagingRequest) {
+
+        // 요청 검색 필터 생성
+        var bountyMissionSubmissionSearchConditionBuilder = BountyMissionSubmissionSearchCondition.builder()
+                .guildId(guildId)
+                .hunterDiscordUserId(hunterDiscordUserId);
+
+        if(!pagingRequest.isOffsetMode()) {
+            IdAndLocalDateTimeCursor cursor = CursorUtil.getCursorAs(pagingRequest.getCursor(), IdAndLocalDateTimeCursor.class);
+            bountyMissionSubmissionSearchConditionBuilder
+                    .lastBountyMissionSubmissionId(cursor.lastId())
+                    .lastCreatedAt(cursor.lastCreatedAt());
+        }
+
+        var searchCondition = bountyMissionSubmissionSearchConditionBuilder.build();
+
+        PagingResponse<BountyMissionSubmissionQueryDto> bountyMissionSubmissionQueryDtoPagingResponse = bountyMissionSubmissionRepository.findBountyMissionSubmissionListView(searchCondition, pagingRequest);
+
+        // 첫 페이지 또는 무한 스크롤(Cursor) 조회 요청이면서 결과 데이터가 존재하는 경우에만 커서 생성
+        List<BountyMissionSubmissionQueryDto> data = bountyMissionSubmissionQueryDtoPagingResponse.getData();
+        if ((pagingRequest.getPage() == 1 || !pagingRequest.isOffsetMode()) && !data.isEmpty()) {
+            // 현재 목록의 맨 마지막 아이템을 꺼내서 다음 조회 조건(커서) 생성 - 무한스크롤
+            BountyMissionSubmissionQueryDto lastItem = data.get(data.size() - 1);
+            IdAndLocalDateTimeCursor nextCursor = new IdAndLocalDateTimeCursor(lastItem.getSubmissionId(), lastItem.getCreatedAt());
+            bountyMissionSubmissionQueryDtoPagingResponse.setCursor(CursorUtil.encodeCursor(nextCursor));
+        }
+
+        return bountyMissionSubmissionQueryDtoPagingResponse;
     }
 
     /**
@@ -139,7 +172,7 @@ public class BountyMissionSubmissionService {
     }
 
     /***
-     *
+     * 내가 등록한 미션들에 보고된 제출 목록 조회(봇)
      * @param guildId
      * @param hunterDiscordUserId
      * @param pagingRequest
@@ -155,7 +188,7 @@ public class BountyMissionSubmissionService {
             List<BountyPendingSubmissionDto> currentData = bountyPendingSubmissionDtoPagingResponse.getData();
             BountyPendingSubmissionDto lastItem = currentData.get(currentData.size() - 1);
 
-            MissionController.MissionsCursor nextCursor = new MissionController.MissionsCursor(
+            IdAndLocalDateTimeCursor nextCursor = new IdAndLocalDateTimeCursor(
                     lastItem.getSubmissionId(),
                     lastItem.getSubmittedAt()
             );
@@ -163,7 +196,12 @@ public class BountyMissionSubmissionService {
             bountyPendingSubmissionDtoPagingResponse.setCursor(CursorUtil.encodeCursor(nextCursor));
         }
 
-        bountyPendingSubmissionDtoPagingResponse.getData().forEach(bountyPendingSubmissionDto -> bountyPendingSubmissionDto.setProofImageUrl(r2StorageService.generateObjectAccessUrl(bountyPendingSubmissionDto.getProofImageUrl())));
+        //오브젝트에 접근가능한 경로로 수정
+        bountyPendingSubmissionDtoPagingResponse.getData().forEach(bountyPendingSubmissionDto -> {
+            List<BountyMissionFileServiceDto> bountyMissionFileList = bountyPendingSubmissionDto.getBountyMissionFileList();
+            bountyMissionFileList.forEach(bountyMissionFileServiceDto -> bountyMissionFileServiceDto.setFileUrl(r2StorageService.generateWorkerObjectAccessUrl(bountyMissionFileServiceDto.getFileUrl())));
+        });
+//        bountyPendingSubmissionDtoPagingResponse.getData().forEach(bountyPendingSubmissionDto -> bountyPendingSubmissionDto.setProofImageUrl(r2StorageService.generateObjectAccessUrl(bountyPendingSubmissionDto.getProofImageUrl())));
 
 
         return bountyPendingSubmissionDtoPagingResponse;

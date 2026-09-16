@@ -6,7 +6,9 @@ import com.side.chubotamanju.domain.user.controller.dto.request.BountyMissionCre
 import com.side.chubotamanju.domain.user.controller.dto.request.BountyMissionSubmissionCreateRequest;
 import com.side.chubotamanju.domain.user.controller.dto.request.BountyMissionSubmissionReviewCreateRequest;
 import com.side.chubotamanju.domain.user.controller.dto.response.BountyMissionResponse;
+import com.side.chubotamanju.domain.user.controller.dto.response.BountyMissionSubmissionResponse;
 import com.side.chubotamanju.domain.user.service.*;
+import com.side.chubotamanju.domain.user.service.dto.BountyMissionSubmissionQueryDto;
 import com.side.chubotamanju.domain.user.service.dto.BountyMissionFileServiceDto;
 import com.side.chubotamanju.domain.user.service.dto.BountyMissionServiceDto;
 import com.side.chubotamanju.domain.user.service.dto.BountyMissionSubmissionServiceDto;
@@ -217,7 +219,7 @@ public class MissionController {
      * @return
      */
     @PostMapping("/bot/missions/proof")
-    public ResponseEntity<ApiResult<Void>> proofMissionBot(
+    public ResponseEntity<ApiResult<BountyProofSubmitResult>> proofMissionBot(
             @AuthenticationPrincipal CustomOAuth2User customOAuth2User
             , @RequestBody BountyMissionSubmissionCreateRequest bountyMissionSubmissionCreateRequest
     ) {
@@ -230,7 +232,6 @@ public class MissionController {
                         .build())
                 .toList();
 
-
         //미션 보고 등록 처리
         BountyMissionSubmissionServiceDto bountyMissionSubmissionServiceDto = BountyMissionSubmissionServiceDto.builder()
                 .missionId(bountyMissionSubmissionCreateRequest.getMissionId())
@@ -238,9 +239,9 @@ public class MissionController {
                 .bountyMissionFileServiceDtoList(bountyMissionFileServiceDtoList)
                 .build();
 
-        bountyMissionSubmissionServiceFacade.submitMission(customOAuth2User.getProviderId(), bountyMissionSubmissionServiceDto);
+        BountyProofSubmitResult bountyProofSubmitResult = bountyMissionSubmissionServiceFacade.submitMissionBot(customOAuth2User.getProviderId(), bountyMissionSubmissionServiceDto);
 
-        return ResponseEntity.ok(ApiResult.success(null));
+        return ResponseEntity.ok(ApiResult.success(bountyProofSubmitResult));
     }
 
     /**
@@ -404,6 +405,7 @@ public class MissionController {
     }
 
     /**
+     * TODO 진행 예정
      * 헌터의 미션 도전 기록 목록 조회
      * 검색 옵션
      * @return
@@ -414,6 +416,7 @@ public class MissionController {
             , @RequestParam(name = "lastBountyMissionId", required = false) Long lastBountyMissionId
             , @RequestParam(name = "lastCreatedAt", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime lastCreatedAt
             , @PageableDefault(size = 20) Pageable pageable
+            , PagingRequest pagingRequest
             , @AuthenticationPrincipal CustomOAuth2User customOAuth2User
     ) {
 
@@ -429,7 +432,29 @@ public class MissionController {
     }
 
     /**
+     * 내 진행 중 의뢰(미션) 목록 조회(웹)
+     * - 무한스크롤 페이징
+     * @param guildId
+     * @param customOAuth2User
+     * @return
+     */
+    @GetMapping("/guilds/{guildId}/my-submissions")
+    public ResponseEntity<ApiResult<PagingResponse<BountyMissionSubmissionResponse>>> findMyMissionSubmissions(
+            @PathVariable(name = "guildId") String guildId
+            , @AuthenticationPrincipal CustomOAuth2User customOAuth2User
+            , PagingRequest pagingRequest
+    ) {
+        PagingResponse<BountyMissionSubmissionQueryDto> bountyMissionSubmissionListView = bountyMissionSubmissionService.findBountyMissionSubmissionListView(guildId, customOAuth2User.getProviderId(), pagingRequest);
+        List<BountyMissionSubmissionResponse> bountyMissionSubmissionResponseList = bountyMissionSubmissionListView.getData().stream()
+                .map(BountyMissionSubmissionResponse::from)
+                .toList();
+
+        return ResponseEntity.ok(ApiResult.success(bountyMissionSubmissionListView.changeData(bountyMissionSubmissionResponseList)));
+    }
+
+    /**
      * 내 진행 중 의뢰(미션) 목록 조회(봇)
+     * - 오프셋 방식 페이징
      * @param guildId
      * @param customOAuth2User
      * @return
@@ -440,7 +465,11 @@ public class MissionController {
             , @AuthenticationPrincipal CustomOAuth2User customOAuth2User
             , PagingRequest pagingRequest
     ) {
-        PagingResponse<BountyHunterSubmissionDto> bountyMissionSubmissionListView = bountyMissionSubmissionService.findBountyMissionSubmissionListView(guildId, customOAuth2User.getProviderId(), pagingRequest);
-        return ResponseEntity.ok(ApiResult.success(bountyMissionSubmissionListView));
+        PagingResponse<BountyMissionSubmissionQueryDto> bountyMissionSubmissionListView = bountyMissionSubmissionService.findBountyMissionSubmissionListView(guildId, customOAuth2User.getProviderId(), pagingRequest);
+        List<BountyHunterSubmissionDto> bountyHunterSubmissionDtoList = bountyMissionSubmissionListView.getData().stream()
+                .map(BountyHunterSubmissionDto::from)
+                .toList();
+
+        return ResponseEntity.ok(ApiResult.success(bountyMissionSubmissionListView.changeData(bountyHunterSubmissionDtoList)));
     }
 }

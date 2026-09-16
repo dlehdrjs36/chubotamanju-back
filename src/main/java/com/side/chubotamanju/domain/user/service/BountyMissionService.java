@@ -1,6 +1,5 @@
 package com.side.chubotamanju.domain.user.service;
 
-import com.side.chubotamanju.domain.bounty.controller.MissionController;
 import com.side.chubotamanju.domain.bounty.controller.dto.api.BountyMissionUpdateRequest;
 import com.side.chubotamanju.domain.bounty.controller.dto.api.BountyMissionViewDto;
 import com.side.chubotamanju.domain.user.entity.BountyMission;
@@ -9,6 +8,7 @@ import com.side.chubotamanju.domain.user.repository.BountyMissionRepository;
 import com.side.chubotamanju.domain.user.repository.dto.BountyMissionSearchCondition;
 import com.side.chubotamanju.domain.user.service.dto.BountyMissionServiceDto;
 import com.side.chubotamanju.global.common.CursorUtil;
+import com.side.chubotamanju.global.common.IdAndLocalDateTimeCursor;
 import com.side.chubotamanju.global.common.PagingRequest;
 import com.side.chubotamanju.global.common.PagingResponse;
 import lombok.RequiredArgsConstructor;
@@ -38,9 +38,9 @@ public class BountyMissionService {
                 .requesterDiscordUserId(userId);
 
         if(!pagingRequest.isOffsetMode()) {
-            MissionController.MissionsCursor cursor = CursorUtil.getCursorAs(pagingRequest.getCursor(), MissionController.MissionsCursor.class);
+            IdAndLocalDateTimeCursor cursor = CursorUtil.getCursorAs(pagingRequest.getCursor(), IdAndLocalDateTimeCursor.class);
 
-            bountyMissionSearchConditionBuilder.lastBountyMissionId(cursor.lastBountyMissionId())
+            bountyMissionSearchConditionBuilder.lastBountyMissionId(cursor.lastId())
                     .lastCreatedAt(cursor.lastCreatedAt());
         }
         BountyMissionSearchCondition bountyMissionSearchCondition = bountyMissionSearchConditionBuilder.build();
@@ -72,7 +72,7 @@ public class BountyMissionService {
             List<BountyMission> currentData = bountyMissionPagingResponse.getData();
             BountyMission lastItem = currentData.get(currentData.size() - 1);
 
-            MissionController.MissionsCursor nextCursor = new MissionController.MissionsCursor(
+            IdAndLocalDateTimeCursor nextCursor = new IdAndLocalDateTimeCursor(
                     lastItem.getId(),
                     lastItem.getCreatedAt()
             );
@@ -94,9 +94,9 @@ public class BountyMissionService {
                 .requesterDiscordUserId(userId);
 
         if(!pagingRequest.isOffsetMode()) {
-            MissionController.MissionsCursor cursor = CursorUtil.getCursorAs(pagingRequest.getCursor(), MissionController.MissionsCursor.class);
+            IdAndLocalDateTimeCursor cursor = CursorUtil.getCursorAs(pagingRequest.getCursor(), IdAndLocalDateTimeCursor.class);
 
-            bountyMissionSearchConditionBuilder.lastBountyMissionId(cursor.lastBountyMissionId())
+            bountyMissionSearchConditionBuilder.lastBountyMissionId(cursor.lastId())
                     .lastCreatedAt(cursor.lastCreatedAt());
         }
         BountyMissionSearchCondition bountyMissionSearchCondition = bountyMissionSearchConditionBuilder.build();
@@ -126,7 +126,7 @@ public class BountyMissionService {
             List<BountyMission> currentData = bountyMissionList.getData();
             BountyMission lastItem = currentData.get(currentData.size() - 1);
 
-            MissionController.MissionsCursor nextCursor = new MissionController.MissionsCursor(
+            IdAndLocalDateTimeCursor nextCursor = new IdAndLocalDateTimeCursor(
                     lastItem.getId(),
                     lastItem.getCreatedAt()
             );
@@ -147,9 +147,9 @@ public class BountyMissionService {
         BountyMissionSearchCondition.BountyMissionSearchConditionBuilder bountyMissionSearchConditionBuilder = BountyMissionSearchCondition.builder()
                 .guildId(guildId);
         if(!pagingRequest.isOffsetMode()) {
-            MissionController.MissionsCursor cursor = CursorUtil.getCursorAs(pagingRequest.getCursor(), MissionController.MissionsCursor.class);
+            IdAndLocalDateTimeCursor cursor = CursorUtil.getCursorAs(pagingRequest.getCursor(), IdAndLocalDateTimeCursor.class);
 
-            bountyMissionSearchConditionBuilder.lastBountyMissionId(cursor.lastBountyMissionId())
+            bountyMissionSearchConditionBuilder.lastBountyMissionId(cursor.lastId())
                     .lastCreatedAt(cursor.lastCreatedAt());
         }
         BountyMissionSearchCondition bountyMissionSearchCondition = bountyMissionSearchConditionBuilder.build();
@@ -180,7 +180,7 @@ public class BountyMissionService {
             List<BountyMission> currentData = bountyMissionList.getData();
             BountyMission lastItem = currentData.get(currentData.size() - 1);
 
-            MissionController.MissionsCursor nextCursor = new MissionController.MissionsCursor(
+            IdAndLocalDateTimeCursor nextCursor = new IdAndLocalDateTimeCursor(
                     lastItem.getId(),
                     lastItem.getCreatedAt()
             );
