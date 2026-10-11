@@ -45,6 +45,7 @@ public interface BountyMissionRepository extends JpaRepository<BountyMission, Lo
 
     //디스코드 유저가 등록한 미션 조회
     Optional<BountyMission> findByIdAndGuildIdAndRequesterDiscordUserIdAndStatus(Long id, String guildId, String requesterDiscordUserId, BountyMissionStatus status);
+    Optional<BountyMission> findByIdAndGuildIdAndRequesterDiscordUserId(Long id, String guildId, String requesterDiscordUserId);
 
     //디스코드 유저가 등록한 미션 조회
     Optional<BountyMission> findByIdAndRequesterDiscordUserIdAndStatus(Long id, String requesterDiscordUserId, BountyMissionStatus status);

@@ -1,5 +1,6 @@
 package com.side.chubotamanju.domain.user.entity;
 
+import com.side.chubotamanju.domain.user.enums.BountyMissionFileStatus;
 import jakarta.persistence.*;
 import lombok.Getter;
 
@@ -17,6 +18,10 @@ public class BountyMissionFile extends BaseTimeEntity {
 
     @Column(name = "file_url", length = 1000)
     private String fileUrl;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false, columnDefinition = "ENUM('ACTIVE', 'CANCEL') DEFAULT 'ACTIVE'")
+    private BountyMissionFileStatus status = BountyMissionFileStatus.ACTIVE;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "submission_id")

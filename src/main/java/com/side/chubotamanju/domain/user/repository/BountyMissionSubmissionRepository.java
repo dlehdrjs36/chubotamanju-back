@@ -2,6 +2,7 @@ package com.side.chubotamanju.domain.user.repository;
 
 
 import com.side.chubotamanju.domain.user.entity.BountyMissionSubmission;
+import com.side.chubotamanju.domain.user.enums.BountyMissionFileStatus;
 import com.side.chubotamanju.domain.user.enums.BountySubmissionStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
@@ -30,7 +31,11 @@ public interface BountyMissionSubmissionRepository extends JpaRepository<BountyM
     List<BountyMissionSubmission> findByMissionIdAndHunterDiscordUserIdOrderByCreatedAtDesc(Long missionId, String hunterDiscordUserId);
     List<BountyMissionSubmission> findByHunterDiscordUserIdIsNotAndMissionIdAndStatus(String hunterDiscordUserId, Long missionId, BountySubmissionStatus status);
 
+    @Modifying(clearAutomatically = true) // 컬렉션 1차캐시 동기화
+    @Query("update BountyMissionFile b set b.status = :status where b.bountyMissionSubmission.id = :submissionId")
+    int updateStatusBountyMissionFileList(@Param("submissionId") Long submissionId, @Param("status") BountyMissionFileStatus status);
+
     @Modifying
-    @Query("delete from BountyMissionSubmission b where b.id = :id and b.hunterDiscordUserId = :hunterDiscordUserId ")
+    @Query("delete from BountyMissionSubmission b where b.id = :id and b.hunterDiscordUserId = :hunterDiscordUserId")
     int deleteBountyMissionSubmissionInfo(@Param("id") Long id, @Param("hunterDiscordUserId") String hunterDiscordUserId);
 }

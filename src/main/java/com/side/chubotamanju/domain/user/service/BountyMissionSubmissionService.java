@@ -4,6 +4,7 @@ import com.side.chubotamanju.domain.bounty.controller.dto.api.BountyPendingSubmi
 import com.side.chubotamanju.domain.r2.service.R2StorageService;
 import com.side.chubotamanju.domain.user.entity.BountyMission;
 import com.side.chubotamanju.domain.user.entity.BountyMissionSubmission;
+import com.side.chubotamanju.domain.user.enums.BountyMissionFileStatus;
 import com.side.chubotamanju.domain.user.enums.BountySubmissionStatus;
 import com.side.chubotamanju.domain.user.repository.BountyMissionRepository;
 import com.side.chubotamanju.domain.user.repository.BountyMissionSubmissionRepository;
@@ -168,7 +169,15 @@ public class BountyMissionSubmissionService {
      */
     @Transactional
     public int cancelSubmission(Long submissionId, String userId) {
-        return bountyMissionSubmissionRepository.deleteBountyMissionSubmissionInfo(submissionId, userId);
+        // 해당 유저의 보고 제거
+        int deleteCount = bountyMissionSubmissionRepository.deleteBountyMissionSubmissionInfo(submissionId, userId);
+
+        // 보고에 첨부된 파일 정보 제거
+        if(deleteCount != 0) {
+            bountyMissionSubmissionRepository.updateStatusBountyMissionFileList(submissionId, BountyMissionFileStatus.CANCELED);
+        }
+
+        return deleteCount;
     }
 
     /***

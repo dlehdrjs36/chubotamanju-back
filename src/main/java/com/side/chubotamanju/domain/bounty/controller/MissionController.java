@@ -2,11 +2,11 @@ package com.side.chubotamanju.domain.bounty.controller;
 
 import com.side.chubotamanju.domain.bounty.controller.dto.api.*;
 import com.side.chubotamanju.domain.bounty.controller.validator.MissionValidator;
-import com.side.chubotamanju.domain.user.controller.dto.request.BountyMissionCreateRequest;
-import com.side.chubotamanju.domain.user.controller.dto.request.BountyMissionSubmissionCreateRequest;
-import com.side.chubotamanju.domain.user.controller.dto.request.BountyMissionSubmissionReviewCreateRequest;
-import com.side.chubotamanju.domain.user.controller.dto.response.BountyMissionResponse;
-import com.side.chubotamanju.domain.user.controller.dto.response.BountyMissionSubmissionResponse;
+import com.side.chubotamanju.domain.bounty.controller.dto.request.BountyMissionCreateRequest;
+import com.side.chubotamanju.domain.bounty.controller.dto.request.BountyMissionSubmissionCreateRequest;
+import com.side.chubotamanju.domain.bounty.controller.dto.request.BountyMissionSubmissionReviewCreateRequest;
+import com.side.chubotamanju.domain.bounty.controller.dto.response.BountyMissionResponse;
+import com.side.chubotamanju.domain.bounty.controller.dto.response.BountyMissionSubmissionResponse;
 import com.side.chubotamanju.domain.user.service.*;
 import com.side.chubotamanju.domain.user.service.dto.BountyMissionSubmissionQueryDto;
 import com.side.chubotamanju.domain.user.service.dto.BountyMissionFileServiceDto;
@@ -57,7 +57,7 @@ public class MissionController {
         PagingResponse<BountyMissionServiceDto> bountyMissionList = bountyMissionService.findBountyMissionList(guildId, pagingRequest);
         List<BountyMissionResponse> bountyMissionResponseList = bountyMissionList.getData()
                 .stream()
-                .map(BountyMissionResponse::convert)
+                .map(BountyMissionResponse::from)
                 .toList();
 
         bountyMissionResponseList.forEach(bountyMissionResponse -> {
@@ -119,7 +119,7 @@ public class MissionController {
 
         PagingResponse<BountyMissionServiceDto> bountyMissionServiceDtoPagingResponse = bountyMissionService.findBountyMissionListByUserId(customOAuth2User.getProviderId(), guildId, pagingRequest);
         List<BountyMissionResponse> bountyMissionResponseList = bountyMissionServiceDtoPagingResponse.getData().stream()
-                .map(BountyMissionResponse::convert)
+                .map(BountyMissionResponse::from)
                 .toList();
 
         bountyMissionResponseList.forEach(bountyMissionResponse -> {
@@ -245,6 +245,24 @@ public class MissionController {
     }
 
     /**
+     * 유저 본인이 등록한 미션 조회(웹)
+     * @param guildId
+     * @param missionId
+     * @param customOAuth2User
+     * @return
+     */
+    @GetMapping("/guilds/{guildId}/missions/{missionId}")
+    public ResponseEntity<ApiResult<BountyMissionResponse>> searchMissionInfoWeb(
+            @PathVariable("guildId") String guildId
+            , @PathVariable("missionId") Long missionId
+            , @AuthenticationPrincipal CustomOAuth2User customOAuth2User
+    ) {
+
+        BountyMissionServiceDto bountyMissionViewDtoInfoWeb = bountyMissionService.findBountyMissionViewDtoInfoWeb(missionId, guildId, customOAuth2User.getProviderId());
+        return ResponseEntity.ok(ApiResult.success(BountyMissionResponse.from(bountyMissionViewDtoInfoWeb)));
+    }
+
+    /**
      * 유저 본인이 등록한 미션 조회(봇)
      * @param guildId
      * @param missionId
@@ -258,7 +276,7 @@ public class MissionController {
             , @AuthenticationPrincipal CustomOAuth2User customOAuth2User
     ) {
 
-        BountyMissionViewDto bountyMissionViewDtoInfo = bountyMissionService.findBountyMissionViewDtoInfo(missionId, guildId, customOAuth2User.getProviderId());
+        BountyMissionViewDto bountyMissionViewDtoInfo = bountyMissionService.findBountyMissionViewDtoInfoBot(missionId, guildId, customOAuth2User.getProviderId());
 
         return ResponseEntity.ok(ApiResult.success(bountyMissionViewDtoInfo));
     }
@@ -326,7 +344,6 @@ public class MissionController {
             @PathVariable Long missionId
             , @AuthenticationPrincipal CustomOAuth2User customOAuth2User
     ) {
-
         //요청한 사람이 미션의 의뢰자인지 검증
         List<BountyMissionSubmissionServiceDto> bountyMissionSubmissionServiceDtoList = bountyMissionSubmissionServiceFacade.findBountyMissionSubmissionByRequestUserIdAndMissionId(customOAuth2User.getProviderId(), missionId);
 

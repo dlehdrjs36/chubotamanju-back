@@ -1,7 +1,7 @@
 package com.side.chubotamanju.domain.bounty.controller.validator;
 
 
-import com.side.chubotamanju.domain.user.controller.dto.request.BountyMissionCreateRequest;
+import com.side.chubotamanju.domain.bounty.controller.dto.request.BountyMissionCreateRequest;
 import com.side.chubotamanju.global.exception.ValidationException;
 import org.springframework.validation.BeanPropertyBindingResult;
 

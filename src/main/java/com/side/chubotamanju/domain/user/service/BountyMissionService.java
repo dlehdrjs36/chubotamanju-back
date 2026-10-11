@@ -4,6 +4,8 @@ import com.side.chubotamanju.domain.bounty.controller.dto.api.BountyMissionUpdat
 import com.side.chubotamanju.domain.bounty.controller.dto.api.BountyMissionViewDto;
 import com.side.chubotamanju.domain.user.entity.BountyMission;
 import com.side.chubotamanju.domain.user.enums.BountyMissionStatus;
+import com.side.chubotamanju.domain.user.enums.BountyRank;
+import com.side.chubotamanju.domain.user.enums.TeamClearRule;
 import com.side.chubotamanju.domain.user.repository.BountyMissionRepository;
 import com.side.chubotamanju.domain.user.repository.dto.BountyMissionSearchCondition;
 import com.side.chubotamanju.domain.user.service.dto.BountyMissionServiceDto;
@@ -16,6 +18,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -289,13 +292,30 @@ public class BountyMissionService {
                 .orElseThrow(() -> new IllegalArgumentException("해당 의뢰를 찾을 수 없어."));
     }
 
+
     /**
-     * 유저가 등록한 완료되지 않은 미션 단건 조회
+     * 유저가 등록한 미션 단건 조회(웹)
+     * - 웹에 특화된 화면 정보
      * @param missionId
      * @param requestUserId
      * @return
      */
-    public BountyMissionViewDto findBountyMissionViewDtoInfo(Long missionId, String guildId, String requestUserId) {
+    public BountyMissionServiceDto findBountyMissionViewDtoInfoWeb(Long missionId, String guildId, String requestUserId) {
+        BountyMission bountyMission = bountyMissionRepository.findByIdAndGuildIdAndRequesterDiscordUserId(missionId, guildId, requestUserId)
+                .orElseThrow(() -> new IllegalArgumentException("해당 의뢰를 찾을 수 없어."));
+
+        return BountyMissionServiceDto.from(bountyMission);
+    }
+
+    /**
+     * 유저가 등록한 완료되지 않은 미션 단건 조회(봇)
+     * - 봇에 특화된 화면 정보
+     * - 현재는 웹과 같지만 추후 변경가능성있으므로 분리
+     * @param missionId
+     * @param requestUserId
+     * @return
+     */
+    public BountyMissionViewDto findBountyMissionViewDtoInfoBot(Long missionId, String guildId, String requestUserId) {
         BountyMission bountyMission = bountyMissionRepository.findByIdAndGuildIdAndRequesterDiscordUserIdAndStatus(missionId, guildId, requestUserId, BountyMissionStatus.OPEN)
                 .orElseThrow(() -> new IllegalArgumentException("해당 의뢰를 찾을 수 없어."));
 
