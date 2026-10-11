@@ -64,3 +64,17 @@ jobs:
           push: true
           tags: |
             ghcr.io/${{ steps.string.outputs.image_name }}:latest
+
+      # 7. 깃허브 패키지 무료 용량한도 유지하도록 버전 관리
+      - name: Delete old package versions
+        uses: actions/delete-package-versions@v5
+        with:
+          package-name: 'chubotamanju-back' # 실제 깃허브 패키지 이름 작성
+          package-type: 'container'
+          # 최신 버전 몇 개를 남겨둘지 설정 (예: 최신 2개만 남기고 다 삭제)
+          min-versions-to-keep: 2
+          # 단, 'latest' 태그가 붙은 이미지는 절대 지우지 않도록 설정
+          ignore-versions: '^(latest)$'
+        env:
+          # 패키지를 삭제할 수 있는 권한 토큰 (따로 만들 필요 없이 기본 토큰 사용)
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
