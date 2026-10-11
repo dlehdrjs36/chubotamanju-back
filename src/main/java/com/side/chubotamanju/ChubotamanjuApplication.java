@@ -11,7 +11,7 @@ import org.springframework.scheduling.annotation.EnableAsync;
 public class ChubotamanjuApplication {
 
 	public static void main(String[] args) {
-		SpringApplication.run(ChubotamanjuApplication.class, args);
+		SpringApplication.run(ChubotamanjuApplication.class, args); 
 	}
 
 }
