@@ -78,3 +78,61 @@ jobs:
         env:
           # 패키지를 삭제할 수 있는 권한 토큰 (따로 만들 필요 없이 기본 토큰 사용)
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # 8. 프로젝트에 있는 docker-compose.yml 파일을 서버로 전송
+      - name: Copy docker-compose.yml to Server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SSH_HOST }} # 인스턴스 IP
+          username: ${{ secrets.SSH_USER }} # 인스턴스 접속 유저 ID
+          key: ${{ secrets.SSH_PRIVATE_KEY }} # SSH Private Key
+          source: "docker-compose.yml"
+          target: ${{ secrets.APP_DIR }} # 서버 내 복사할 폴더 경로
+
+      # 9. 서버에 SSH 접속하여 이미지를 다운받고 도커 실행
+      - name: Deploy to Cloud Instance via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            # 1. 컴포즈 파일이 있는 폴더로 이동
+            cd ${{ secrets.APP_DIR }} 
+            
+            # 2. 깃허브 패키지 로그인 (Private 이미지 접근 권한 인증)
+            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+            
+            # 3. 깃허브 패키지로부터 최신 이미지 가져오기
+            docker compose pull
+            
+            # 4. 동일 이미지 기반으로 순차적으로 포트가 다른 2개의 컨테이너 실행
+            docker compose stop chubotamanju-api-1
+            docker compose up -d chubotamanju-api-1
+            
+            # 최대 2분 동안만 1번 앱의 healthy 상태 감지
+            echo "Checking chubotamanju-api-1 health status (Max 2 minutes)..."
+            
+            MAX_LOOPS=60 # 2초씩 60번 반복 = 총 120초(2분)
+            LOOP_COUNT=0
+            
+            until [ "$(docker inspect --format='{{.State.Health.Status}}' chubotamanju-api-1)" = "healthy" ]; do
+              # 2분 초과 시 실패 처리 후 스크립트 종료
+              if [ $LOOP_COUNT -ge $MAX_LOOPS ]; then
+                echo "Timeout: chubotamanju-api-1 failed to become healthy within 2 minutes."
+                exit 1
+              fi
+          
+              echo "Waiting for chubotamanju-api-1 to become healthy... (${LOOP_COUNT}/${MAX_LOOPS})"
+              sleep 2
+              LOOP_COUNT=$((LOOP_COUNT + 1))
+            done
+            
+            echo "chubotamanju-api-1 is completely up and running!"
+          
+            docker compose stop chubotamanju-api-2
+            docker compose up -d chubotamanju-api-2
+          
+            
+            # 5. 불필요하게 남은 옛날 도커 이미지 정리 (인스턴스 용량 관리)
+            docker image prune -f
