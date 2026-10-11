@@ -56,6 +56,8 @@ jobs:
       - name: Build and push ARM64 image
         uses: docker/build-push-action@v6
         with:
+          provenance: false
+          sboms: false
           context: .
           file: ./Dockerfile
           platforms: linux/arm64 # 오라클 클라우드 ARM 인스턴스 전용 설정
