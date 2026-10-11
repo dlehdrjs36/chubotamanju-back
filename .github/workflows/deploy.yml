@@ -107,8 +107,7 @@ jobs:
             docker compose pull
             
             # 4. 동일 이미지 기반으로 순차적으로 포트가 다른 2개의 컨테이너 실행
-            docker compose stop chubotamanju-api-1
-            docker compose up -d chubotamanju-api-1
+            docker compose up -d --force-recreate chubotamanju-api-1
             
             # 최대 2분 동안만 1번 앱의 healthy 상태 감지
             echo "Checking chubotamanju-api-1 health status (Max 2 minutes)..."
@@ -129,10 +128,8 @@ jobs:
             done
             
             echo "chubotamanju-api-1 is completely up and running!"
-          
-            docker compose stop chubotamanju-api-2
-            docker compose up -d chubotamanju-api-2
-          
+            
+            docker compose up -d --force-recreate chubotamanju-api-2
             
             # 5. 불필요하게 남은 옛날 도커 이미지 정리 (인스턴스 용량 관리)
             docker image prune -f
