@@ -41,6 +41,7 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
 
         // 4. 응답 헤더에 쿠키 세팅(액세스 토큰, 리프레시 토큰)
         ResponseCookie cookie = ResponseCookie.from("accessToken", accessToken)
+                .domain("chubotamanju.com")
                 .path("/")
                 .httpOnly(true) // 자바스크립트로 쿠키 탈취 방지 (보안)
                 .secure(true) // localhost 테스트 시 false, 운영 환경(https)은 true
@@ -51,6 +52,7 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
         response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
 
         ResponseCookie refreshCookie = ResponseCookie.from("refreshToken", refreshToken)
+                .domain("chubotamanju.com")
                 .path("/")
                 .httpOnly(true) // 자바스크립트로 쿠키 탈취 방지 (보안)
                 .secure(true) // localhost 테스트 시 false, 운영 환경(https)은 true
