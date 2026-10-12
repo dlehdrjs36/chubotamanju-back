@@ -37,9 +37,10 @@ public class UserController {
     @PostMapping("/logout")
     public ResponseEntity<ApiResult<Void>> logout(HttpServletResponse response) {
         ResponseCookie accessTokenCookie = ResponseCookie.from("accessToken", "")
+                .domain("chubotamanju.com")
                 .path("/")
                 .httpOnly(true)
-                .secure(false)
+                .secure(true)
                 .sameSite("Lax")
                 .maxAge(0)
                 .build();

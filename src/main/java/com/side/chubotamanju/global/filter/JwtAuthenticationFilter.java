@@ -59,7 +59,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             return;
         }
 
-        //액세스 토큰 쿠키에서 액세스토큰 값 추출
+        // 액세스 토큰 쿠키에서 액세스토큰 값 추출
         String accessToken = findCookieBy(request, "accessToken");
         if (accessToken != null && SecurityContextHolder.getContext().getAuthentication() == null) {
             //마이크로서비스 자체적으로 토큰 검증
@@ -111,6 +111,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                         String newRefreshToken = jwtTokenProvider.generateRefreshToken(expiredTokenProvider, expiredTokenUserId);
 
                         ResponseCookie cookie = ResponseCookie.from("accessToken", newAccessToken)
+                                .domain("chubotamanju.com")
                                 .path("/")
                                 .httpOnly(true) // 자바스크립트로 쿠키 탈취 방지 (보안)
                                 .secure(true) // localhost 테스트 시 false, 운영 환경(https)은 true
@@ -121,6 +122,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                         response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
 
                         ResponseCookie refreshCookie = ResponseCookie.from("refreshToken", newRefreshToken)
+                                .domain("chubotamanju.com")
                                 .path("/")
                                 .httpOnly(true) // 자바스크립트로 쿠키 탈취 방지 (보안)
                                 .secure(true) // localhost 테스트 시 false, 운영 환경(https)은 true
