@@ -3,6 +3,7 @@ package com.side.chubotamanju.global.config;
 
 import com.side.chubotamanju.domain.user.service.CustomOAuth2UserService;
 import com.side.chubotamanju.global.common.JwtProperties;
+import com.side.chubotamanju.global.config.security.OAuth2AuthenticationFailureHandler;
 import com.side.chubotamanju.global.config.security.OAuth2AuthenticationSuccessHandler;
 import com.side.chubotamanju.global.filter.ApiKeyAuthenticationFilter;
 import com.side.chubotamanju.global.filter.JwtAuthenticationFilter;
@@ -33,6 +34,7 @@ public class SecurityConfig {
     private final JwtUtil jwtTokenProvider;
     private final CustomOAuth2UserService customOAuth2UserService;
     private final OAuth2AuthenticationSuccessHandler oAuth2AuthenticationSuccessHandler;
+    private final OAuth2AuthenticationFailureHandler oAuth2AuthenticationFailureHandler;
     private final HandlerExceptionResolver handlerExceptionResolver;
 
     @Bean ApiKeyAuthenticationFilter apiKeyAuthenticationFilter() {
@@ -69,6 +71,7 @@ public class SecurityConfig {
                     )
                     // 로그인 성공 시 JWT를 생성하고 프론트엔드로 전달할 커스텀 핸들러 설정
                     .successHandler(oAuth2AuthenticationSuccessHandler)
+                    .failureHandler(oAuth2AuthenticationFailureHandler)
             )
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/", "/actuator/**", "/api/public/**", "/api-docs/**", "/login/**", "/oauth2/**").permitAll()
