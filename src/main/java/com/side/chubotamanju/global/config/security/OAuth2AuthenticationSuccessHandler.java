@@ -62,7 +62,7 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
 
         // 5. JWT를 쿠키에 담아 프론트엔드 화면으로 리다이렉트
         String targetUrl = UriComponentsBuilder
-                .fromUriString("http://localhost:5173")
+                .fromUriString("https://chubotamanju.com")
                 .build().toUriString();
 
         getRedirectStrategy().sendRedirect(request, response, targetUrl);

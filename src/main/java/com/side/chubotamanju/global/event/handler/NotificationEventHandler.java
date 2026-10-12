@@ -15,7 +15,7 @@ public class NotificationEventHandler {
 
     public NotificationEventHandler(@Value("${app.api-key}") String expectedApiKey) {
         this.restClient = RestClient.builder()
-                .baseUrl("http://localhost:9030/api/bot")
+                .baseUrl("https://api.chubotamanju.com/api/bot")
                 .defaultHeader(ChubotaHeader.API_KEY.getName(), expectedApiKey)
                 .build();
     }
