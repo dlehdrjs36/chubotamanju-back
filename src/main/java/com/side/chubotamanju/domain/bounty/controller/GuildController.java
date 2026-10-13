@@ -30,6 +30,10 @@ public class GuildController {
 
     @GetMapping("/guilds")
     public ResponseEntity<ApiResult<List<UserGuildResponse>>> getGuildsByUserId(@AuthenticationPrincipal CustomOAuth2User customOAuth2User) {
+        System.out.println("#######################################");
+        System.out.println(customOAuth2User.getName());
+        System.out.println(customOAuth2User.getProviderId());
+        System.out.println("#######################################");
         SocialUser socialUser = socialUserQueryService.findByProviderAndProviderId(customOAuth2User.getName(), customOAuth2User.getProviderId())
                 .orElseThrow(() -> new UserNotFoundException(GlobalErrorCode.USER_NOT_FOUND));
 
