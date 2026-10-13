@@ -20,6 +20,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.util.UriComponentsBuilder;
 
+import java.io.IOException;
+
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api")
@@ -52,8 +54,8 @@ public class UserController {
     }
 
     @GetMapping("/test-cookie")
-    public ResponseEntity<String> testCookie(HttpServletResponse response) {
-        ResponseCookie refreshCookie = ResponseCookie.from("testCookie", "hello")
+    public void testCookie(HttpServletResponse response) throws IOException {
+        ResponseCookie testCookie = ResponseCookie.from("testCookie", "hello")
                 .domain("chubotamanju.com")
                 .path("/")
                 .httpOnly(true) // 자바스크립트로 쿠키 탈취 방지 (보안)
@@ -62,10 +64,7 @@ public class UserController {
                 .maxAge(8000000) // 쿠키 만료 시간 (초)
                 .build();
 
-        return ResponseEntity.ok()
-                .header(
-                        HttpHeaders.SET_COOKIE, refreshCookie.toString()
-                )
-                .body("OK");
+        response.addHeader(HttpHeaders.SET_COOKIE, testCookie.toString());
+        response.sendRedirect("https://chubotamanju.com");
     }
 }
