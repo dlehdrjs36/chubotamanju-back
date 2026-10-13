@@ -67,6 +67,17 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
                 .fromUriString("https://chubotamanju.com")
                 .build().toUriString();
 
+        System.out.println("Set-Cookie count: " +
+                response.getHeaders(HttpHeaders.SET_COOKIE).size());
+
+        System.out.println("Response committed: " +
+                response.isCommitted());
+
+        response.addHeader(
+                HttpHeaders.SET_COOKIE,
+                "oauthTest=success; Path=/; Secure; HttpOnly; SameSite=Lax"
+        );
+
         getRedirectStrategy().sendRedirect(request, response, targetUrl);
     }
 }
