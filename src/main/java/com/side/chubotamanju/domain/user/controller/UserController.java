@@ -53,18 +53,4 @@ public class UserController {
         return ResponseEntity.ok(ApiResult.success(null));
     }
 
-    @GetMapping("/test-cookie")
-    public void testCookie(HttpServletResponse response) throws IOException {
-        ResponseCookie testCookie = ResponseCookie.from("testCookie", "hello")
-                .domain("chubotamanju.com")
-                .path("/")
-                .httpOnly(true) // 자바스크립트로 쿠키 탈취 방지 (보안)
-                .secure(true) // localhost 테스트 시 false, 운영 환경(https)은 true
-                .sameSite("Lax") // 크로스 사이트 요청 보안 설정
-                .maxAge(8000000) // 쿠키 만료 시간 (초)
-                .build();
-
-        response.addHeader(HttpHeaders.SET_COOKIE, testCookie.toString());
-        response.sendRedirect("https://chubotamanju.com");
-    }
 }

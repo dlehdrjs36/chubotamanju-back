@@ -29,8 +29,6 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
                                         Authentication authentication) throws IOException, ServletException {
 
-        System.out.println("=== OAuth2 Success Handler START ===");
-
         // 1. 인증 유저 정보 가져오기
         OAuth2User oAuth2User = (OAuth2User) authentication.getPrincipal();
 
@@ -69,11 +67,6 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
         String targetUrl = UriComponentsBuilder
                 .fromUriString("https://chubotamanju.com")
                 .build().toUriString();
-
-        response.addHeader(
-                HttpHeaders.SET_COOKIE,
-                "oauthTest=success; Path=/; Secure; HttpOnly; SameSite=Lax"
-        );
 
         getRedirectStrategy().sendRedirect(request, response, targetUrl);
     }

@@ -23,15 +23,6 @@ public class OAuth2AuthenticationFailureHandler extends SimpleUrlAuthenticationF
                 .fromUriString("https://chubotamanju.com")
                 .build().toUriString();
 
-        System.out.println("########################");
-        System.out.println("########################");
-        System.out.println("OAUTH2 FAILURE: uri=" + request.getRequestURI() + ", exception=" + exception.getClass().getName() + " " + exception);
-        System.out.println("########################");
-        System.out.println("########################");
-        System.out.println("########################");
-        System.out.println("########################");
-
-        response.addHeader("X-OAuth-Result", "failure");
         getRedirectStrategy().sendRedirect(request, response, targetUrl);
     }
 
