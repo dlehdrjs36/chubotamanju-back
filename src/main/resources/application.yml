@@ -9,6 +9,7 @@ jwt:
 
 app:
   api-key: "${API_REQUEST_KEY}"
+  discord-bot-key: "Bot ${DISCORD_BOT_KEY}"
 
 #logging:
 #  level:
