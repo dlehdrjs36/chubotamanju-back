@@ -75,8 +75,6 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
                 "oauthTest=success; Path=/; Secure; HttpOnly; SameSite=Lax"
         );
 
-        response.setHeader("X-OAuth-Debug", "handler-executed");
-
         getRedirectStrategy().sendRedirect(request, response, targetUrl);
     }
 }

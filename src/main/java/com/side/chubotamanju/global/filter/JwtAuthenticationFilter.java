@@ -44,10 +44,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     //CORS 사전 요청(CORS preflight)은 필터 동작안하도록 처리
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
-        if (request.getMethod().equals("OPTIONS")) {
+        String path = request.getServletPath();
+
+        if (request.getMethod().equals("OPTIONS") || path.startsWith("/oauth2/authorization/") || path.startsWith("/login/oauth2/code/")) {
             return true;
         }
+
         return false;
+
     }
 
     @Override
