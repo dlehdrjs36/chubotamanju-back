@@ -31,6 +31,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import javax.crypto.SecretKey;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -116,7 +117,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                                 .httpOnly(true) // 자바스크립트로 쿠키 탈취 방지 (보안)
                                 .secure(true) // localhost 테스트 시 false, 운영 환경(https)은 true
                                 .sameSite("Lax") // 크로스 사이트 요청 보안 설정
-                                .maxAge(jwtProperties.getAccessExpiration()) // 쿠키 만료 시간 (초)
+                                .maxAge(Duration.ofMillis(jwtProperties.getAccessExpiration())) // 쿠키 만료 시간 (초)
                                 .build();
 
                         response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
@@ -127,7 +128,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                                 .httpOnly(true) // 자바스크립트로 쿠키 탈취 방지 (보안)
                                 .secure(true) // localhost 테스트 시 false, 운영 환경(https)은 true
                                 .sameSite("Lax") // 크로스 사이트 요청 보안 설정
-                                .maxAge(jwtProperties.getRefreshExpiration()) // 쿠키 만료 시간 (초)
+                                .maxAge(Duration.ofMillis(jwtProperties.getRefreshExpiration())) // 쿠키 만료 시간 (초)
                                 .build();
 
                         response.addHeader(HttpHeaders.SET_COOKIE, refreshCookie.toString());

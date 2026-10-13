@@ -16,6 +16,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.io.IOException;
+import java.time.Duration;
 
 @Component
 @RequiredArgsConstructor
@@ -46,7 +47,7 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
                 .httpOnly(true) // 자바스크립트로 쿠키 탈취 방지 (보안)
                 .secure(true) // localhost 테스트 시 false, 운영 환경(https)은 true
                 .sameSite("Lax") // 크로스 사이트 요청 보안 설정
-                .maxAge(jwtProperties.getAccessExpiration()) // 쿠키 만료 시간 (초)
+                .maxAge(Duration.ofMillis(jwtProperties.getAccessExpiration())) // 쿠키 만료 시간 (초)
                 .build();
 
         response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
@@ -57,7 +58,7 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
                 .httpOnly(true) // 자바스크립트로 쿠키 탈취 방지 (보안)
                 .secure(true) // localhost 테스트 시 false, 운영 환경(https)은 true
                 .sameSite("Lax") // 크로스 사이트 요청 보안 설정
-                .maxAge(jwtProperties.getRefreshExpiration()) // 쿠키 만료 시간 (초)
+                .maxAge(Duration.ofMillis(jwtProperties.getRefreshExpiration())) // 쿠키 만료 시간 (초)
                 .build();
 
         response.addHeader(HttpHeaders.SET_COOKIE, refreshCookie.toString());
@@ -67,11 +68,14 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
                 .fromUriString("https://chubotamanju.com")
                 .build().toUriString();
 
-        System.out.println("Set-Cookie count: " +
-                response.getHeaders(HttpHeaders.SET_COOKIE).size());
+        for (int i = 0; i < 500; i++) {
+            System.out.println("jwtProperties.getAccessExpiration() : " + jwtProperties.getAccessExpiration() + " Duration.ofMillis(jwtProperties.getRefreshExpiration()) : " + Duration.ofMillis(jwtProperties.getRefreshExpiration()) + " Set-Cookie count: " +
+                    response.getHeaders(HttpHeaders.SET_COOKIE).size());
 
-        System.out.println("Response committed: " +
-                response.isCommitted());
+            System.out.println("Response committed: " +
+                    response.isCommitted());
+        }
+
 
         response.addHeader(
                 HttpHeaders.SET_COOKIE,
