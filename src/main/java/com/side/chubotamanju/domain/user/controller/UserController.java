@@ -48,7 +48,17 @@ public class UserController {
                 .maxAge(0)
                 .build();
 
+        ResponseCookie refreshTokenCookie = ResponseCookie.from("refreshToken", "")
+                .domain("chubotamanju.com")
+                .path("/")
+                .httpOnly(true)
+                .secure(true)
+                .sameSite("Lax")
+                .maxAge(0)
+                .build();
+
         response.addHeader(HttpHeaders.SET_COOKIE, accessTokenCookie.toString());
+        response.addHeader(HttpHeaders.SET_COOKIE, refreshTokenCookie.toString());
 
         return ResponseEntity.ok(ApiResult.success(null));
     }
