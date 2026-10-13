@@ -29,6 +29,8 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
                                         Authentication authentication) throws IOException, ServletException {
 
+        System.out.println("=== OAuth2 Success Handler START ===");
+
         // 1. 인증 유저 정보 가져오기
         OAuth2User oAuth2User = (OAuth2User) authentication.getPrincipal();
 
@@ -45,7 +47,7 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
                 .domain("chubotamanju.com")
                 .path("/")
                 .httpOnly(true) // 자바스크립트로 쿠키 탈취 방지 (보안)
-                .secure(false) // localhost 테스트 시 false, 운영 환경(https)은 true
+                .secure(true) // localhost 테스트 시 false, 운영 환경(https)은 true
                 .sameSite("Lax") // 크로스 사이트 요청 보안 설정
                 .maxAge(Duration.ofMillis(jwtProperties.getAccessExpiration())) // 쿠키 만료 시간 (초)
                 .build();
@@ -56,7 +58,7 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
                 .domain("chubotamanju.com")
                 .path("/")
                 .httpOnly(true) // 자바스크립트로 쿠키 탈취 방지 (보안)
-                .secure(false) // localhost 테스트 시 false, 운영 환경(https)은 true
+                .secure(true) // localhost 테스트 시 false, 운영 환경(https)은 true
                 .sameSite("Lax") // 크로스 사이트 요청 보안 설정
                 .maxAge(Duration.ofMillis(jwtProperties.getRefreshExpiration())) // 쿠키 만료 시간 (초)
                 .build();
@@ -68,30 +70,12 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
                 .fromUriString("https://chubotamanju.com")
                 .build().toUriString();
 
-        System.out.println("################################################################");
-        System.out.println("################################################################");
-        System.out.println("################################################################");
-        System.out.println("################################################################");
-        System.out.println("################################################################");
-        System.out.println("################################################################");
-        for (int i = 0; i < 500; i++) {
-            System.out.println("jwtProperties.getAccessExpiration() : " + jwtProperties.getAccessExpiration() + " Duration.ofMillis(jwtProperties.getRefreshExpiration()) : " + Duration.ofMillis(jwtProperties.getRefreshExpiration()) + " Set-Cookie count: " +
-                    response.getHeaders(HttpHeaders.SET_COOKIE).size());
-
-            System.out.println("Response committed: " +
-                    response.isCommitted());
-        }
-        System.out.println("################################################################");
-        System.out.println("################################################################");
-        System.out.println("################################################################");
-        System.out.println("################################################################");
-        System.out.println("################################################################");
-        System.out.println("################################################################");
-
         response.addHeader(
                 HttpHeaders.SET_COOKIE,
                 "oauthTest=success; Path=/; Secure; HttpOnly; SameSite=Lax"
         );
+
+        response.setHeader("X-OAuth-Debug", "handler-executed");
 
         getRedirectStrategy().sendRedirect(request, response, targetUrl);
     }
