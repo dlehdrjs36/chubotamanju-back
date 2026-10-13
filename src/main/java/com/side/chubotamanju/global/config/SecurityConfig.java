@@ -23,6 +23,8 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.web.servlet.HandlerExceptionResolver;
 
+import java.util.List;
+
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
@@ -74,7 +76,7 @@ public class SecurityConfig {
                     .failureHandler(oAuth2AuthenticationFailureHandler)
             )
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/", "/actuator/**", "/api/public/**", "/api-docs/**", "/login/**", "/oauth2/**").permitAll()
+                .requestMatchers("/", "/actuator/**", "/api/public/**", "/api-docs/**", "/login/**", "/oauth2/**", "/api/test-cookie").permitAll()
                 .anyRequest().authenticated())
             .exceptionHandling(exception -> exception
                     .authenticationEntryPoint((request, response, authException) -> {
@@ -92,7 +94,9 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration corsConfiguration = new CorsConfiguration();
         corsConfiguration.addAllowedOrigin("https://chubotamanju.com");
-        corsConfiguration.addAllowedMethod("*");
+        corsConfiguration.setAllowedMethods(
+                List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
+        );
         corsConfiguration.addAllowedHeader("*");
         corsConfiguration.setAllowCredentials(true);
         corsConfiguration.setMaxAge(3600L);
