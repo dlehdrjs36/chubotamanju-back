@@ -171,12 +171,10 @@ public class BountyMissionSubmissionRepositoryCustomImpl implements BountyMissio
         List<BountyPendingSubmissionDto> bountyPendingSubmissionDtoList = jpaQueryFactory.select(
                         Projections.fields(BountyPendingSubmissionDto.class
                                 , bountyMissionSubmission.id.as("submissionId")
-                                , bountyMissionSubmission.mission.id.as("missionId")
-                                , bountyMissionSubmission.mission.title.as("missionTitle")
+                                , bountyMission.id.as("missionId")
+                                , bountyMission.title.as("missionTitle")
                                 , bountyMissionSubmission.hunterDiscordUserId.as("hunterDiscordUserId")
-                                , bountyMissionSubmission.mission.rewardText.as("rewardText")
-//                                , bountyMissionSubmission.proofText
-//                                , bountyMissionSubmission.proofImageUrl
+                                , bountyMission.rewardText.as("rewardText")
                                 , bountyMissionSubmission.createdAt.as("submittedAt")
                         ))
                 .from(bountyMissionSubmission)
@@ -184,7 +182,7 @@ public class BountyMissionSubmissionRepositoryCustomImpl implements BountyMissio
                 .where(
                         bountyMissionSubmission.guildId.eq(guildId)
                         , bountyMissionSubmission.status.eq(BountySubmissionStatus.PENDING)
-                        , bountyMissionSubmission.mission.requesterDiscordUserId.eq(hunterDiscordUserId)
+                        , bountyMission.requesterDiscordUserId.eq(hunterDiscordUserId)
 //                            , cursorCondition(bountyMissionSearchCondition.getLastBountyMissionId(), bountyMissionSearchCondition.getLastCreatedAt())
                 )
                 .offset(pagingRequest.isOffsetMode() ? (long) (pagingRequest.getPage() - 1) * pagingRequest.getPageSize() : 0L)
